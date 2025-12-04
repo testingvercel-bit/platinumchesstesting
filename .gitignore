@@ -1,0 +1,8 @@
+node_modules/
+frontend/.next/
+backend/dist/
+frontend/tsconfig.tsbuildinfo
+frontend/.env.local
+backend/.env
+.env
+.DS_Store

@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: platinum-chess
+    env: node
+    autoDeploy: true
+    healthCheckPath: /health
+    buildCommand: |
+      cd backend
+      npm ci
+      npm run build
+      cd ../frontend
+      npm ci
+      npm run build
+    startCommand: node backend/dist/index.js
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: PAYFAST_MERCHANT_ID
+        sync: false
+      - key: PAYFAST_MERCHANT_KEY
+        sync: false
+      - key: PAYFAST_PASSPHRASE
+        sync: false
+      - key: PAYFAST_PROCESS_URL
+        sync: false
+      - key: PUBLIC_BASE_URL
+        sync: false
