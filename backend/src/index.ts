@@ -235,7 +235,10 @@ app.get("/payments/payfast/cancel", (_req, res) => {
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
-  cors: { origin: "*" }
+  cors: { origin: "*" },
+  transports: ["websocket", "polling"],
+  pingTimeout: 30000,
+  pingInterval: 25000
 });
 
 const rooms = new Map<string, Room>();
@@ -392,7 +395,7 @@ io.on("connection", socket => {
       io.to(b.socketId).emit("paired", { roomId, time });
     }
   });
-  socket.on("joinGame", (payload: { roomId: string; playerId: string; name?: string; userId?: string }) => {
+  socket.on("joinGame", async (payload: { roomId: string; playerId: string; name?: string; userId?: string }) => {
     const { roomId, playerId, name, userId } = payload;
     const room = getOrCreateRoom(roomId);
     socket.join(roomId);
@@ -401,17 +404,32 @@ io.on("connection", socket => {
     if (assigned) {
       io.to(socket.id).emit("colorAssigned", { color: assigned });
     }
-    // attach userId and name if available
     const color = colorForPlayer(room, playerId);
     if (color === "white" && room.players.white) { room.players.white.userId = userId; if (name) room.players.white.name = name; }
     if (color === "black" && room.players.black) { room.players.black.userId = userId; if (name) room.players.black.name = name; }
     io.to(socket.id).emit("gameState", gameStatePayload(room));
+    let whiteName = room.players.white?.name;
+    let blackName = room.players.black?.name;
+    if (!whiteName && room.players.white?.userId && supabaseAdmin) {
+      try {
+        const { data } = await supabaseAdmin.from("profiles").select("username").eq("id", room.players.white.userId).maybeSingle();
+        whiteName = (data as any)?.username || undefined;
+        if (whiteName && room.players.white) room.players.white.name = whiteName;
+      } catch {}
+    }
+    if (!blackName && room.players.black?.userId && supabaseAdmin) {
+      try {
+        const { data } = await supabaseAdmin.from("profiles").select("username").eq("id", room.players.black.userId).maybeSingle();
+        blackName = (data as any)?.username || undefined;
+        if (blackName && room.players.black) room.players.black.name = blackName;
+      } catch {}
+    }
     io.to(roomId).emit("playerNames", {
-      white: room.players.white?.name || (room.players.white?.playerId ? room.players.white.playerId.slice(0, 8) : undefined),
-      black: room.players.black?.name || (room.players.black?.playerId ? room.players.black.playerId.slice(0, 8) : undefined)
+      white: whiteName || undefined,
+      black: blackName || undefined
     });
   });
-  socket.on("setName", (payload: { roomId: string; playerId: string; name: string }) => {
+  socket.on("setName", async (payload: { roomId: string; playerId: string; name: string }) => {
     const { roomId, playerId, name } = payload;
     const room = rooms.get(roomId);
     if (!room) return;
@@ -419,10 +437,15 @@ io.on("connection", socket => {
     if (!color) return;
     if (color === "white" && room.players.white) room.players.white.name = name;
     if (color === "black" && room.players.black) room.players.black.name = name;
-    io.to(roomId).emit("playerNames", {
-      white: room.players.white?.name || (room.players.white?.playerId ? room.players.white.playerId.slice(0, 8) : undefined),
-      black: room.players.black?.name || (room.players.black?.playerId ? room.players.black.playerId.slice(0, 8) : undefined)
-    });
+    let whiteName = room.players.white?.name;
+    let blackName = room.players.black?.name;
+    if (!whiteName && room.players.white?.userId && supabaseAdmin) {
+      try { const { data } = await supabaseAdmin.from("profiles").select("username").eq("id", room.players.white.userId).maybeSingle(); whiteName = (data as any)?.username || undefined; } catch {}
+    }
+    if (!blackName && room.players.black?.userId && supabaseAdmin) {
+      try { const { data } = await supabaseAdmin.from("profiles").select("username").eq("id", room.players.black.userId).maybeSingle(); blackName = (data as any)?.username || undefined; } catch {}
+    }
+    io.to(roomId).emit("playerNames", { white: whiteName || undefined, black: blackName || undefined });
   });
 
   socket.on("sendChat", (payload: { roomId: string; playerId: string; text: string; name?: string }) => {
