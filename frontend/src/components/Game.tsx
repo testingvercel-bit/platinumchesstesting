@@ -23,7 +23,7 @@ export default function Game({ roomId }: { roomId: string }) {
   const lastTickRef = useRef<number>(Date.now());
   const clocksInitializedRef = useRef<boolean>(false);
   const isReplayingRef = useRef<boolean>(false);
-  const [meName, setMeName] = useState<string>("You");
+  const [meName, setMeName] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
   const joinedWithUserRef = useRef<boolean>(false);
   const [whiteName, setWhiteName] = useState<string>("");
@@ -147,7 +147,7 @@ export default function Game({ roomId }: { roomId: string }) {
       if (!user) return;
       setUserId(user.id);
       const { data: prof } = await s.from("profiles").select("username").eq("id", user.id).maybeSingle();
-      setMeName(((prof as any)?.username as string) || (user.email as string) || "You");
+      setMeName(((prof as any)?.username as string) || (user.email as string) || "");
     });
   }, []);
 
@@ -243,15 +243,15 @@ export default function Game({ roomId }: { roomId: string }) {
         {/* Left Sidebar - Moves & Controls - Desktop */}
         <div className="hidden lg:block space-y-3">
           {/* Stake Display */}
-          <div className="bg-[#262421] rounded-lg px-4 py-3 border border-[#3d3d37]">
+          <div className="bg-[#262421] px-4 py-3 border border-[#3d3d37]">
             <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Prize Pool</div>
             <div className="text-2xl font-bold text-emerald-400">${stakePotUsd.toFixed(2)}</div>
           </div>
 
           {/* Opponent Info */}
-          <div className="bg-[#262421] rounded-lg px-4 py-3 border border-[#3d3d37] flex items-center justify-between">
+          <div className="bg-[#262421] px-4 py-3 border border-[#3d3d37] flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-[#3d3d37] flex items-center justify-center text-sm font-medium">
+              <div className="w-8 h-8 bg-[#3d3d37] flex items-center justify-center text-sm font-medium">
                 {opponentName[0]?.toUpperCase()}
               </div>
               <div className="text-sm font-medium text-gray-200">{opponentName}</div>
@@ -262,7 +262,7 @@ export default function Game({ roomId }: { roomId: string }) {
           </div>
 
           {/* Moves List */}
-          <div className="bg-[#262421] rounded-lg border border-[#3d3d37] overflow-hidden">
+          <div className="bg-[#262421] border border-[#3d3d37] overflow-hidden">
             <div className="px-4 py-2 bg-[#1a1916] border-b border-[#3d3d37]">
               <div className="text-xs text-gray-400 uppercase tracking-wider">Moves</div>
             </div>
@@ -271,7 +271,7 @@ export default function Game({ roomId }: { roomId: string }) {
                 <button 
                   onClick={() => applyReplay(0)} 
                   disabled={replayIndex <= 0} 
-                  className="p-1.5 hover:bg-[#3d3d37] rounded disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                  className="p-1.5 hover:bg-[#3d3d37] disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                   aria-label="First"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -281,7 +281,7 @@ export default function Game({ roomId }: { roomId: string }) {
                 <button 
                   onClick={() => applyReplay(replayIndex - 1)} 
                   disabled={replayIndex <= 0} 
-                  className="p-1.5 hover:bg-[#3d3d37] rounded disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                  className="p-1.5 hover:bg-[#3d3d37] disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                   aria-label="Previous"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -292,7 +292,7 @@ export default function Game({ roomId }: { roomId: string }) {
                 <button 
                   onClick={() => applyReplay(replayIndex + 1)} 
                   disabled={replayIndex >= history.length} 
-                  className="p-1.5 hover:bg-[#3d3d37] rounded disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                  className="p-1.5 hover:bg-[#3d3d37] disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                   aria-label="Next"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -302,7 +302,7 @@ export default function Game({ roomId }: { roomId: string }) {
                 <button 
                   onClick={() => applyReplay(history.length)} 
                   disabled={replayIndex >= history.length} 
-                  className="p-1.5 hover:bg-[#3d3d37] rounded disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                  className="p-1.5 hover:bg-[#3d3d37] disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
                   aria-label="Last"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -316,7 +316,7 @@ export default function Game({ roomId }: { roomId: string }) {
                     const moveNum = Math.floor(i / 2) + 1;
                     const isWhite = i % 2 === 0;
                     return (
-                      <div key={i} className={`px-2 py-1 rounded ${i < replayIndex ? 'bg-[#3d3d37] text-gray-200' : 'text-gray-500'}`}>
+                      <div key={i} className={`px-2 py-1 ${i < replayIndex ? 'bg-[#3d3d37] text-gray-200' : 'text-gray-500'}`}>
                         {isWhite && <span className="text-gray-400 mr-1">{moveNum}.</span>}
                         <span className="font-medium">{m.san}</span>
                       </div>
@@ -328,9 +328,9 @@ export default function Game({ roomId }: { roomId: string }) {
           </div>
 
           {/* Player Info */}
-          <div className="bg-[#262421] rounded-lg px-4 py-3 border border-[#3d3d37] flex items-center justify-between">
+          <div className="bg-[#262421] px-4 py-3 border border-[#3d3d37] flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-sm font-medium text-white">
+              <div className="w-8 h-8 bg-emerald-600 flex items-center justify-center text-sm font-medium text-white">
                 {playerName[0]?.toUpperCase()}
               </div>
               <div className="text-sm font-medium text-gray-200">{playerName}</div>
@@ -341,12 +341,12 @@ export default function Game({ roomId }: { roomId: string }) {
           </div>
 
           {/* Game Controls */}
-          <div className="bg-[#262421] rounded-lg px-4 py-3 border border-[#3d3d37]">
+          <div className="bg-[#262421] px-4 py-3 border border-[#3d3d37]">
             <div className="flex items-center justify-between gap-2">
               <button 
                 onClick={resign} 
                 disabled={gameOver} 
-                className="flex-1 py-2.5 bg-[#3d3d37] hover:bg-[#4a4a42] text-gray-200 rounded-md font-medium text-sm disabled:opacity-50 disabled:hover:bg-[#3d3d37] transition-colors"
+                className="flex-1 py-2.5 bg-[#3d3d37] hover:bg-[#4a4a42] text-gray-200 font-medium text-sm disabled:opacity-50 disabled:hover:bg-[#3d3d37] transition-colors"
               >
                 Resign
               </button>
@@ -354,7 +354,7 @@ export default function Game({ roomId }: { roomId: string }) {
                 <button 
                   onClick={offerDraw} 
                   disabled={gameOver || drawPending} 
-                  className="px-4 py-2.5 bg-[#3d3d37] hover:bg-[#4a4a42] text-gray-200 rounded-md font-medium text-lg disabled:opacity-50 disabled:hover:bg-[#3d3d37] transition-colors"
+                className="px-4 py-2.5 bg-[#3d3d37] hover:bg-[#4a4a42] text-gray-200 font-medium text-lg disabled:opacity-50 disabled:hover:bg-[#3d3d37] transition-colors"
                   title="Offer Draw"
                 >
                   ½
@@ -365,13 +365,13 @@ export default function Game({ roomId }: { roomId: string }) {
               <div className="mt-2 flex gap-2">
                 <button 
                   onClick={acceptDraw} 
-                  className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md font-medium text-sm transition-colors"
+                className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition-colors"
                 >
                   Accept Draw
                 </button>
                 <button 
                   onClick={declineDraw} 
-                  className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md font-medium text-sm transition-colors"
+                className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-colors"
                 >
                   Decline
                 </button>
@@ -385,10 +385,14 @@ export default function Game({ roomId }: { roomId: string }) {
 
         {/* Center - Chess Board */}
         <div className="flex flex-col">
+          <div className="lg:hidden bg-[#262421] mx-0 mt-2 px-0 py-2 border border-[#3d3d37]">
+            <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Prize Pool</div>
+            <div className="text-2xl font-bold text-emerald-400">${stakePotUsd.toFixed(2)}</div>
+          </div>
           {/* Mobile: Opponent Info */}
-          <div className="lg:hidden bg-[#262421] mx-2 mt-2 rounded-lg px-3 py-2 border border-[#3d3d37] flex items-center justify-between">
+          <div className="lg:hidden bg-[#262421] mx-0 mt-2 px-0 py-2 border border-[#3d3d37] flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-[#3d3d37] flex items-center justify-center text-xs font-medium">
+              <div className="w-7 h-7 bg-[#3d3d37] flex items-center justify-center text-xs font-medium">
                 {opponentName[0]?.toUpperCase()}
               </div>
               <div className="text-sm font-medium text-gray-200">{opponentName}</div>
@@ -399,14 +403,14 @@ export default function Game({ roomId }: { roomId: string }) {
           </div>
 
           {/* Board Container */}
-          <div className="flex-1 flex items-center justify-center p-2 lg:p-0">
+          <div className="flex-1 flex items-center justify-center p-0 lg:p-0">
             <div className="w-full max-w-[600px] aspect-square">
               {gameOver && (
-                <div className="mb-2 text-center py-2 bg-[#262421] rounded-lg border border-[#3d3d37]">
+                <div className="mb-2 text-center py-2 bg-[#262421] border border-[#3d3d37]">
                   <div className="text-sm font-medium text-gray-200">{status}</div>
                 </div>
               )}
-              <div className="relative w-full h-full rounded-lg overflow-hidden shadow-2xl">
+              <div className="relative w-full h-full overflow-hidden shadow-2xl">
                 <ChessGame.Root fen={fen} orientation={color === "black" ? "b" : "w"}>
                   <BoardBridge fen={fen} color={color} />
                   <SyncBridge 
@@ -428,10 +432,28 @@ export default function Game({ roomId }: { roomId: string }) {
             </div>
           </div>
 
+          <div className="lg:hidden bg-[#262421] mx-0 mb-2 px-0 py-2 border border-[#3d3d37]">
+            <div className="flex items-center justify-between">
+              <button onClick={() => applyReplay(0)} disabled={replayIndex <= 0} className="p-2 hover:bg-[#3d3d37] disabled:opacity-30 disabled:hover:bg-transparent" aria-label="First">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M18 6L12 12L18 18M12 6L6 12L12 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              <button onClick={() => applyReplay(replayIndex - 1)} disabled={replayIndex <= 0} className="p-2 hover:bg-[#3d3d37] disabled:opacity-30 disabled:hover:bg-transparent" aria-label="Previous">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 6L9 12L15 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              <div className="text-xs text-gray-400">{replayIndex} / {history.length}</div>
+              <button onClick={() => applyReplay(replayIndex + 1)} disabled={replayIndex >= history.length} className="p-2 hover:bg-[#3d3d37] disabled:opacity-30 disabled:hover:bg-transparent" aria-label="Next">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              <button onClick={() => applyReplay(history.length)} disabled={replayIndex >= history.length} className="p-2 hover:bg-[#3d3d37] disabled:opacity-30 disabled:hover:bg-transparent" aria-label="Last">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6L12 12L6 18M12 6L18 12L12 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+
           {/* Mobile: Player Info */}
-          <div className="lg:hidden bg-[#262421] mx-2 mb-2 rounded-lg px-3 py-2 border border-[#3d3d37] flex items-center justify-between">
+          <div className="lg:hidden bg-[#262421] mx-0 mb-2 px-0 py-2 border border-[#3d3d37] flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-xs font-medium text-white">
+              <div className="w-7 h-7 bg-emerald-600 flex items-center justify-center text-xs font-medium text-white">
                 {playerName[0]?.toUpperCase()}
               </div>
               <div className="text-sm font-medium text-gray-200">{playerName}</div>
@@ -442,12 +464,12 @@ export default function Game({ roomId }: { roomId: string }) {
           </div>
 
           {/* Mobile: Game Controls */}
-          <div className="lg:hidden bg-[#262421] mx-2 mb-2 rounded-lg px-3 py-3 border border-[#3d3d37]">
+          <div className="lg:hidden bg-[#262421] mx-0 mb-2 px-0 py-3 border border-[#3d3d37]">
             <div className="flex items-center justify-between gap-2">
               <button 
                 onClick={resign} 
                 disabled={gameOver} 
-                className="flex-1 py-2.5 bg-[#3d3d37] hover:active:bg-[#4a4a42] text-gray-200 rounded-md font-medium text-sm disabled:opacity-50 transition-colors"
+                className="flex-1 py-2.5 bg-[#3d3d37] hover:active:bg-[#4a4a42] text-gray-200 font-medium text-sm disabled:opacity-50 transition-colors"
               >
                 Resign
               </button>
@@ -455,7 +477,7 @@ export default function Game({ roomId }: { roomId: string }) {
                 <button 
                   onClick={offerDraw} 
                   disabled={gameOver || drawPending} 
-                  className="px-4 py-2.5 bg-[#3d3d37] hover:active:bg-[#4a4a42] text-gray-200 rounded-md font-medium text-lg disabled:opacity-50 transition-colors"
+                className="px-4 py-2.5 bg-[#3d3d37] hover:active:bg-[#4a4a42] text-gray-200 font-medium text-lg disabled:opacity-50 transition-colors"
                   title="Offer Draw"
                 >
                   ½
@@ -464,10 +486,10 @@ export default function Game({ roomId }: { roomId: string }) {
             </div>
             {drawOfferFrom && color && drawOfferFrom !== color && !gameOver && (
               <div className="mt-2 flex gap-2">
-                <button onClick={acceptDraw} className="flex-1 py-2 bg-emerald-600 text-white rounded-md font-medium text-sm">
+                <button onClick={acceptDraw} className="flex-1 py-2 bg-emerald-600 text-white font-medium text-sm">
                   Accept Draw
                 </button>
-                <button onClick={declineDraw} className="flex-1 py-2 bg-red-600 text-white rounded-md font-medium text-sm">
+                <button onClick={declineDraw} className="flex-1 py-2 bg-red-600 text-white font-medium text-sm">
                   Decline
                 </button>
               </div>
@@ -481,14 +503,14 @@ export default function Game({ roomId }: { roomId: string }) {
         {/* Right Sidebar - Chat */}
         <div className="lg:block space-y-3 flex flex-col lg:max-h-[calc(100vh-3rem)]">
           {/* Desktop: Stake Display */}
-          <div className="hidden lg:block bg-[#262421] rounded-lg px-4 py-3 border border-[#3d3d37]">
+          <div className="hidden lg:block bg-[#262421] px-4 py-3 border border-[#3d3d37]">
             <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Prize Pool</div>
             <div className="text-2xl font-bold text-emerald-400">${stakePotUsd.toFixed(2)}</div>
           </div>
 
           {/* Chat */}
-          <div className="bg-[#262421] rounded-t-lg lg:rounded-lg border border-[#3d3d37] flex flex-col flex-1 lg:min-h-0">
-            <div className="px-4 py-2 bg-[#1a1916] border-b border-[#3d3d37] rounded-t-lg">
+          <div className="bg-[#262421] border border-[#3d3d37] flex flex-col flex-1 lg:min-h-0">
+            <div className="px-4 py-2 bg-[#1a1916] border-b border-[#3d3d37]">
               <div className="text-xs text-gray-400 uppercase tracking-wider">Chat</div>
             </div>
             <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-2 min-h-[200px] lg:min-h-0">
@@ -510,11 +532,11 @@ export default function Game({ roomId }: { roomId: string }) {
                   value={chatText} 
                   onChange={e => setChatText(e.target.value)} 
                   placeholder="Type a message..." 
-                  className="flex-1 px-3 py-2 bg-[#262421] text-gray-200 rounded-md border border-[#3d3d37] focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-sm placeholder-gray-500"
+                  className="flex-1 px-3 py-2 bg-[#262421] text-gray-200 border border-[#3d3d37] focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-sm placeholder-gray-500"
                 />
                 <button 
                   type="submit" 
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md font-medium text-sm transition-colors"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition-colors"
                 >
                   Send
                 </button>
