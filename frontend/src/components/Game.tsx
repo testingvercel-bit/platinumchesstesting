@@ -47,12 +47,13 @@ export default function Game({ roomId }: { roomId: string }) {
   }, []);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length > 0) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
 
   useEffect(() => {
-    const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
-    const socket = io(serverUrl, { transports: ["websocket", "polling"], reconnection: true, reconnectionAttempts: Infinity, reconnectionDelayMax: 5000 });
+    const socket = io({ transports: ["websocket", "polling"], reconnection: true, reconnectionAttempts: Infinity, reconnectionDelayMax: 5000 });
     socketRef.current = socket;
     socket.on("connect", () => {
       socket.emit("joinGame", { roomId, playerId, name: meName, userId });
@@ -312,7 +313,7 @@ export default function Game({ roomId }: { roomId: string }) {
           </div>
 
           <div className="bg-[#262421] px-4 py-3 border border-[#3d3d37]">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-center gap-4">
               <button 
                 onClick={resign} 
                 disabled={gameOver} 
@@ -359,16 +360,13 @@ export default function Game({ roomId }: { roomId: string }) {
 
         {/* Center - Chess Board */}
         <div className="flex flex-col">
-          <div className="lg:hidden bg-[#262421] mx-0 mt-2 px-0 py-2 border border-[#3d3d37] text-center">
+          <div className="lg:hidden mx-0 mt-2 px-0 py-2 text-center">
             <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Prize Pool</div>
             <div className="text-2xl font-bold text-emerald-400">${stakePotUsd.toFixed(2)}</div>
           </div>
           {/* Mobile: Opponent Info */}
-          <div className="lg:hidden bg-[#262421] mx-0 mt-2 px-0 py-2 border border-[#3d3d37] flex items-center justify-between">
+          <div className="lg:hidden mx-0 mt-2 px-0 py-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 bg-[#3d3d37] flex items-center justify-center text-xs font-medium">
-                {opponentName[0]?.toUpperCase()}
-              </div>
               <div className="text-sm font-medium text-gray-200">{opponentName}</div>
             </div>
             <div className={`text-lg font-mono font-semibold ${opponentTime < 30000 ? 'text-red-400' : 'text-gray-200'}`}>
@@ -406,15 +404,19 @@ export default function Game({ roomId }: { roomId: string }) {
             </div>
           </div>
 
-          <div className="lg:hidden bg-[#262421] mx-0 mb-2 px-0 py-2 border border-[#3d3d37]">
-            <div className="flex items-center justify-between">
+          <div className="lg:hidden mx-0 mb-2 px-0 py-2">
+            <div className="flex items-center gap-2 justify-between">
               <button onClick={() => applyReplay(0)} disabled={replayIndex <= 0} className="p-2 hover:bg-[#3d3d37] disabled:opacity-30 disabled:hover:bg-transparent" aria-label="First">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M18 6L12 12L18 18M12 6L6 12L12 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
               <button onClick={() => applyReplay(replayIndex - 1)} disabled={replayIndex <= 0} className="p-2 hover:bg-[#3d3d37] disabled:opacity-30 disabled:hover:bg-transparent" aria-label="Previous">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 6L9 12L15 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
-              <div className="text-xs text-gray-400">{replayIndex} / {history.length}</div>
+              <div className="flex-1 overflow-x-auto no-scrollbar whitespace-nowrap text-sm text-gray-300">
+                {history.map((m, i) => (
+                  <span key={i} className={`mr-2 ${i < replayIndex ? 'text-gray-100' : 'text-gray-500'}`}>{m.san}</span>
+                ))}
+              </div>
               <button onClick={() => applyReplay(replayIndex + 1)} disabled={replayIndex >= history.length} className="p-2 hover:bg-[#3d3d37] disabled:opacity-30 disabled:hover:bg-transparent" aria-label="Next">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
@@ -425,11 +427,8 @@ export default function Game({ roomId }: { roomId: string }) {
           </div>
 
           {/* Mobile: Player Info */}
-          <div className="lg:hidden bg-[#262421] mx-0 mb-2 px-0 py-2 border border-[#3d3d37] flex items-center justify-between">
+          <div className="lg:hidden mx-0 mb-2 px-0 py-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 bg-emerald-600 flex items-center justify-center text-xs font-medium text-white">
-                {playerName[0]?.toUpperCase()}
-              </div>
               <div className="text-sm font-medium text-gray-200">{playerName}</div>
             </div>
             <div className={`text-lg font-mono font-semibold ${playerTime < 30000 ? 'text-red-400' : 'text-gray-200'}`}>
@@ -437,46 +436,11 @@ export default function Game({ roomId }: { roomId: string }) {
             </div>
           </div>
 
-          <div className="lg:hidden bg-[#262421] mx-0 mb-2 border border-[#3d3d37] overflow-hidden">
-            <div className="px-4 py-2 bg-[#1a1916] border-b border-[#3d3d37]">
-              <div className="text-xs text-gray-400 uppercase tracking-wider">Moves</div>
-            </div>
-            <div className="px-3 py-2">
-              <div className="flex items-center justify-between mb-2">
-                <button onClick={() => applyReplay(0)} disabled={replayIndex <= 0} className="p-2 disabled:opacity-30 disabled:hover:bg-transparent" aria-label="First">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M18 6L12 12L18 18M12 6L6 12L12 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </button>
-                <button onClick={() => applyReplay(replayIndex - 1)} disabled={replayIndex <= 0} className="p-2 disabled:opacity-30 disabled:hover:bg-transparent" aria-label="Previous">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 6L9 12L15 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </button>
-                <div className="text-xs text-gray-400">{replayIndex} / {history.length}</div>
-                <button onClick={() => applyReplay(replayIndex + 1)} disabled={replayIndex >= history.length} className="p-2 disabled:opacity-30 disabled:hover:bg-transparent" aria-label="Next">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </button>
-                <button onClick={() => applyReplay(history.length)} disabled={replayIndex >= history.length} className="p-2 disabled:opacity-30 disabled:hover:bg-transparent" aria-label="Last">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6L12 12L6 18M12 6L18 12L12 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </button>
-              </div>
-              <div className="max-h-[240px] overflow-y-auto custom-scrollbar">
-                <div className="grid grid-cols-2 gap-1 text-sm">
-                  {history.map((m, i) => {
-                    const moveNum = Math.floor(i / 2) + 1;
-                    const isWhite = i % 2 === 0;
-                    return (
-                      <div key={i} className={`${i < replayIndex ? 'bg-[#3d3d37] text-gray-200' : 'text-gray-500'} px-2 py-1`}>
-                        {isWhite && <span className="text-gray-400 mr-1">{moveNum}.</span>}
-                        <span className="font-medium">{m.san}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
+          
 
           {/* Mobile: Game Controls */}
-          <div className="lg:hidden bg-[#262421] mx-0 mb-2 px-0 py-3 border border-[#3d3d37]">
-            <div className="flex items-center justify-between gap-2">
+          <div className="lg:hidden mx-0 mb-2 px-0 py-3">
+            <div className="flex items-center justify-center gap-4">
               <button 
                 onClick={resign} 
                 disabled={gameOver} 

@@ -59,8 +59,7 @@ export default function PlaygroundPage() {
       setStatus("Insufficient balance for selected stake");
       return;
     }
-    const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
-    const socket = io(serverUrl, { transports: ["websocket", "polling"] });
+    const socket = io({ transports: ["websocket", "polling"] });
     if (typeof window !== "undefined") window.localStorage.setItem("platinumchess-selected-time", time);
     setStatus(`Queued for ${time}... waiting for opponent`);
     socket.on("connect", () => {
@@ -167,24 +166,21 @@ export default function PlaygroundPage() {
           ))}
         </div>
         <div className="mt-3 text-sm text-gray-300">{status}</div>
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2" />
-          <div>
-            <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 backdrop-blur-md shadow-lg shadow-black/30">
-              <div className="px-4 py-3 text-sm font-medium text-neutral-300">Recent games</div>
-              <div className="px-4 py-2">
-                {recent.slice(0, 5).map((g, i) => (
-                  <div key={i} className="flex items-center justify-between py-2 border-b border-neutral-800 last:border-b-0">
-                    <div>
-                      <div className="text-neutral-200 text-sm">{g.opponentName}</div>
-                      <div className={`text-xs ${g.result!=="draw" ? (g.deltaUsd>0?"text-green-400":"text-red-400") : "text-neutral-400"}`}>{g.result!=="draw" ? (g.deltaUsd>0?`Won +$${g.deltaUsd.toFixed(2)}`:`Lost -$${Math.abs(g.deltaUsd).toFixed(2)}`) : "Draw ±$0.00"}</div>
-                    </div>
-                    <div className="text-xs text-neutral-400">${g.stakeUsd} stake</div>
+        <div className="mt-6">
+          <div className="rounded-xl border border-neutral-800 bg-neutral-900/60 backdrop-blur-md shadow-lg shadow-black/30">
+            <div className="px-4 py-3 text-sm font-medium text-neutral-300">Recent games</div>
+            <div className="px-4 py-2">
+              {recent.slice(0, 5).map((g, i) => (
+                <div key={i} className="flex items-center justify-between py-2 border-b border-neutral-800 last:border-b-0">
+                  <div>
+                    <div className="text-neutral-200 text-sm">{g.opponentName}</div>
+                    <div className={`text-xs ${g.result!=="draw" ? (g.deltaUsd>0?"text-green-400":"text-red-400") : "text-neutral-400"}`}>{g.result!=="draw" ? (g.deltaUsd>0?`Won +$${g.deltaUsd.toFixed(2)}`:`Lost -$${Math.abs(g.deltaUsd).toFixed(2)}`) : "Draw ±$0.00"}</div>
                   </div>
-                ))}
-                <div className="mt-3">
-                  <button onClick={() => { const next = recOffset + 5; setRecOffset(next); loadRecent(next); }} className="w-full px-3 py-2 rounded-md bg-neutral-800 text-neutral-200 hover:bg-neutral-700 text-sm">Show more</button>
+                  <div className="text-xs text-neutral-400">${g.stakeUsd} stake</div>
                 </div>
+              ))}
+              <div className="mt-3">
+                <button onClick={() => { const next = recOffset + 5; setRecOffset(next); loadRecent(next); }} className="w-full px-3 py-2 rounded-md bg-neutral-800 text-neutral-200 hover:bg-neutral-700 text-sm">Show more</button>
               </div>
             </div>
           </div>
