@@ -19,6 +19,7 @@ export default function PlaygroundPage() {
     }
     return 1;
   });
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const playerId = useMemo(() => {
     const key = "platinumchess-player-id";
     const existing = typeof window !== "undefined" ? window.localStorage.getItem(key) : null;
@@ -55,6 +56,11 @@ export default function PlaygroundPage() {
   ];
 
   function queue(time: string) {
+    if (!userId) {
+      setStatus("Please log in to play");
+      setShowLoginModal(true);
+      return;
+    }
     if (stakeUsd > balanceUsd) {
       setStatus("Insufficient balance for selected stake");
       return;
@@ -189,6 +195,21 @@ export default function PlaygroundPage() {
           </div>
         </div>
       </div>
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowLoginModal(false)} />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] max-w-sm rounded-2xl border border-neutral-800 bg-neutral-950 shadow-2xl">
+            <div className="px-5 py-4">
+              <div className="text-lg font-semibold text-neutral-50">Please log in to play</div>
+              <div className="mt-1 text-sm text-neutral-400">You need an account to join games.</div>
+              <div className="mt-4 flex gap-2">
+                <button className="flex-1 px-4 py-2 rounded-md bg-neutral-800 text-neutral-200 hover:bg-neutral-700" onClick={() => setShowLoginModal(false)}>Close</button>
+                <button className="flex-1 px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700" onClick={() => router.push("/auth/sign-in")}>Log in</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Bg>
   );
 }

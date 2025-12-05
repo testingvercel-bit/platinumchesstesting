@@ -100,7 +100,6 @@ export default function Header({
           ) : (
             <div className="flex items-center gap-2">
               <button className="rounded-full border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 px-3.5 py-1.5 text-sm font-medium tracking-tight text-neutral-100" onClick={() => onLogin && onLogin()}>Log in</button>
-              <button className="rounded-full bg-neutral-100 hover:bg-white px-3.5 py-1.5 text-sm font-semibold tracking-tight text-neutral-900" onClick={() => onSignup && onSignup()}>Sign up</button>
             </div>
           )}
         </div>
