@@ -635,7 +635,8 @@ async function start() {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
   const nextDir = path.resolve(__dirname, "../../frontend");
-  const nextApp = next({ dev: false, dir: nextDir });
+  const dev = (process.env.NODE_ENV || "").toLowerCase() !== "production";
+  const nextApp = next({ dev, dir: nextDir });
   const handle = nextApp.getRequestHandler();
   console.log("Starting server on port", PORT);
   await nextApp.prepare();

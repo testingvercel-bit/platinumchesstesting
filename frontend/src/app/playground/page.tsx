@@ -31,7 +31,7 @@ export default function PlaygroundPage() {
     const s = getSupabase();
     s.auth.getSession().then(async ({ data }) => {
       const uid = data.session?.user?.id;
-      if (!uid) { router.push("/auth/sign-in"); return; }
+      if (!uid) { setUserId(""); return; }
       setUserId(uid);
       const { data: prof } = await s.from("profiles").select("full_name,username,phone_number,date_of_birth,balance_usd").eq("id", uid).maybeSingle();
       if (!prof || !prof.full_name || !prof.username || !prof.phone_number || !prof.date_of_birth) {
@@ -100,6 +100,9 @@ export default function PlaygroundPage() {
         onLogout={async () => { await getSupabase().auth.signOut(); router.push("/auth/sign-in"); }}
         onDeposit={() => router.push("/deposit")}
         onWithdraw={() => router.push("/profile")}
+        isAuthenticated={!!userId}
+        onLogin={() => router.push("/auth/sign-in")}
+        onSignup={() => router.push("/auth/sign-up")}
       />
       <div className="relative px-4 md:px-0 py-0 w-[min(90vw,70vh)] md:w-[min(70vw,60vh)] mx-auto">
         <div className="mt-4 w-full rounded-xl border border-neutral-800 bg-neutral-900/60 backdrop-blur-md shadow-lg shadow-black/30">

@@ -10,6 +10,9 @@ interface HeaderProps {
   onLogout: () => Promise<void> | void;
   onDeposit?: () => void;
   onWithdraw?: () => void;
+  isAuthenticated?: boolean;
+  onLogin?: () => void;
+  onSignup?: () => void;
 }
 
 export default function Header({
@@ -19,6 +22,9 @@ export default function Header({
   onLogout,
   onDeposit,
   onWithdraw,
+  isAuthenticated,
+  onLogin,
+  onSignup,
 }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -36,58 +42,67 @@ export default function Header({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center gap-3 rounded-full border border-neutral-800 bg-neutral-900/70 px-3 py-1.5">
-            <span className="text-xs font-medium text-neutral-400">Balance</span>
-            <span className="text-sm font-semibold tracking-tight text-emerald-400">${typeof balanceUsd === "number" ? balanceUsd.toFixed(2) : "--"}</span>
-          </div>
-
-          {onDeposit && (
-            <button className="hidden sm:inline-flex items-center gap-2 rounded-full bg-emerald-500/90 hover:bg-emerald-400 transition-colors px-3.5 py-1.5 text-sm font-medium tracking-tight text-neutral-950 shadow-sm" onClick={onDeposit}>
-              <span>Deposit</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 5v14" />
-                <path d="m19 12-7 7-7-7" />
-              </svg>
-            </button>
-          )}
-
-          {onWithdraw && (
-            <button className="hidden sm:inline-flex items-center gap-2 rounded-full border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 transition-colors px-3.5 py-1.5 text-sm font-medium tracking-tight text-neutral-100" onClick={onWithdraw}>
-              <span>Withdraw</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 19V5" />
-                <path d="m5 12 7-7 7 7" />
-              </svg>
-            </button>
-          )}
-
-          <div className="relative hidden sm:block">
-            <button className="inline-flex items-center gap-2 rounded-full border border-neutral-700 bg-neutral-900 px-2.5 py-1.5 text-sm font-medium tracking-tight text-neutral-100" onClick={() => setIsMenuOpen((prev) => !prev)}>
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-800 text-xs font-semibold tracking-tight">{initial}</span>
-              <span className="hidden sm:inline">{username || "Account"}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </button>
-            {isMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 rounded-lg bg-[#1a1a1a] border border-[#2f2f2f] shadow-xl overflow-hidden z-50">
-                <button className="w-full text-left px-4 py-3 text-gray-200 hover:bg-[#242424] transition-colors duration-150" onClick={() => { setIsMenuOpen(false); onProfile(); }}>Profile</button>
-                <button className="w-full text-left px-4 py-3 text-gray-200 hover:bg-[#242424] transition-colors duration-150 border-t border-[#2f2f2f]" onClick={async () => { setIsMenuOpen(false); await onLogout(); }}>Logout</button>
+          {isAuthenticated ? (
+            <>
+              <div className="hidden sm:flex items-center gap-3 rounded-full border border-neutral-800 bg-neutral-900/70 px-3 py-1.5">
+                <span className="text-xs font-medium text-neutral-400">Balance</span>
+                <span className="text-sm font-semibold tracking-tight text-emerald-400">${typeof balanceUsd === "number" ? balanceUsd.toFixed(2) : "--"}</span>
               </div>
-            )}
-          </div>
 
-          <button
-            aria-label="Open menu"
-            className="sm:hidden inline-flex items-center justify-center rounded-md border border-neutral-700 bg-neutral-900 p-2 text-neutral-100"
-            onClick={() => setIsMobileMenuOpen(true)}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 6h18" />
-              <path d="M3 12h18" />
-              <path d="M3 18h18" />
-            </svg>
-          </button>
+              {onDeposit && (
+                <button className="hidden sm:inline-flex items-center gap-2 rounded-full bg-emerald-500/90 hover:bg-emerald-400 transition-colors px-3.5 py-1.5 text-sm font-medium tracking-tight text-neutral-950 shadow-sm" onClick={onDeposit}>
+                  <span>Deposit</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 5v14" />
+                    <path d="m19 12-7 7-7-7" />
+                  </svg>
+                </button>
+              )}
+
+              {onWithdraw && (
+                <button className="hidden sm:inline-flex items-center gap-2 rounded-full border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 transition-colors px-3.5 py-1.5 text-sm font-medium tracking-tight text-neutral-100" onClick={onWithdraw}>
+                  <span>Withdraw</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 19V5" />
+                    <path d="m5 12 7-7 7 7" />
+                  </svg>
+                </button>
+              )}
+
+              <div className="relative hidden sm:block">
+                <button className="inline-flex items-center gap-2 rounded-full border border-neutral-700 bg-neutral-900 px-2.5 py-1.5 text-sm font-medium tracking-tight text-neutral-100" onClick={() => setIsMenuOpen((prev) => !prev)}>
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-800 text-xs font-semibold tracking-tight">{initial}</span>
+                  <span className="hidden sm:inline">{username || "Account"}</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </button>
+                {isMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 rounded-lg bg-[#1a1a1a] border border-[#2f2f2f] shadow-xl overflow-hidden z-50">
+                    <button className="w-full text-left px-4 py-3 text-gray-200 hover:bg-[#242424] transition-colors duration-150" onClick={() => { setIsMenuOpen(false); onProfile(); }}>Profile</button>
+                    <button className="w-full text-left px-4 py-3 text-gray-200 hover:bg-[#242424] transition-colors duration-150 border-t border-[#2f2f2f]" onClick={async () => { setIsMenuOpen(false); await onLogout(); }}>Logout</button>
+                  </div>
+                )}
+              </div>
+
+              <button
+                aria-label="Open menu"
+                className="sm:hidden inline-flex items-center justify-center rounded-md border border-neutral-700 bg-neutral-900 p-2 text-neutral-100"
+                onClick={() => setIsMobileMenuOpen(true)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18" />
+                  <path d="M3 12h18" />
+                  <path d="M3 18h18" />
+                </svg>
+              </button>
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button className="rounded-full border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 px-3.5 py-1.5 text-sm font-medium tracking-tight text-neutral-100" onClick={() => onLogin && onLogin()}>Log in</button>
+              <button className="rounded-full bg-neutral-100 hover:bg-white px-3.5 py-1.5 text-sm font-semibold tracking-tight text-neutral-900" onClick={() => onSignup && onSignup()}>Sign up</button>
+            </div>
+          )}
         </div>
       </div>
 

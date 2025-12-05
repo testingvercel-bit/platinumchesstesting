@@ -110,10 +110,10 @@ export default function DepositPage() {
               </div>
             </div>
 
-            <form onSubmit={onSubmit} className="mt-8 space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-neutral-300 mb-2">Amount (USD)</label>
-                <div className="flex items-center gap-3">
+              <form onSubmit={onSubmit} className="mt-8 space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-300 mb-2">Amount (USD)</label>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                   <div className="flex-1">
                     <input
                       inputMode="decimal"
@@ -125,7 +125,7 @@ export default function DepositPage() {
                   </div>
                   <button
                     disabled={loading}
-                    className="px-6 py-3 rounded-2xl bg-neutral-100 hover:bg-white text-neutral-900 font-semibold tracking-tight shadow-sm disabled:opacity-50"
+                    className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-neutral-100 hover:bg-white text-neutral-900 font-semibold tracking-tight shadow-sm disabled:opacity-50"
                   >
                     {loading ? "Redirecting..." : "Proceed"}
                   </button>
@@ -135,9 +135,42 @@ export default function DepositPage() {
               </div>
 
               <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
-                {["Face ID secured", "PCI compliant", "Sandbox ready"].map((t, i) => (
+                {[
+                  {
+                    label: "PayFast verified",
+                    icon: (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20" />
+                        <path d="M8 12l2.5 2.5L16 9" />
+                      </svg>
+                    )
+                  },
+                  {
+                    label: "Secure SSL",
+                    icon: (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-neutral-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M6 10V8a6 6 0 0 1 12 0v2" />
+                        <path d="M6 10h12v10H6z" />
+                        <path d="M12 15v3" />
+                      </svg>
+                    )
+                  },
+                  {
+                    label: "No hidden fees",
+                    icon: (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M8 3h8a2 2 0 0 1 2 2v14l-3-2-3 2-3-2-3 2V5a2 2 0 0 1 2-2z" />
+                        <path d="M9 8h6" />
+                        <path d="M9 12h6" />
+                      </svg>
+                    )
+                  }
+                ].map((b, i) => (
                   <div key={i} className="rounded-xl border border-neutral-800 bg-neutral-900/40 px-4 py-3 text-sm text-neutral-300">
-                    {t}
+                    <div className="flex items-center gap-2">
+                      {b.icon}
+                      <span>{b.label}</span>
+                    </div>
                   </div>
                 ))}
               </div>

@@ -1,5 +1,6 @@
 "use client";
 import Bg from "@/components/Bg";
+import Logo from "@/components/Logo";
 import { getSupabase } from "@/lib/supabaseClient";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -31,23 +32,32 @@ export default function ProfilePage() {
 
   return (
     <Bg>
-      <div className="w-[min(90vw,700px)] space-y-6">
-        <div className="text-3xl font-bold text-[#eaeaea]">Your Profile</div>
-        <div className="px-6 py-6 bg-[#242424] border border-[#333333] text-[#eaeaea]">
-          {profile ? (
-            <div className="space-y-4">
-              <Row label="Full Name" value={profile.full_name} />
-              <Row label="Username" value={profile.username} />
-              <Row label="Email" value={email} />
-              <Row label="Phone" value={profile.phone_number} />
-              <Row label="Date of Birth" value={profile.date_of_birth} />
-              <div className="pt-2">
-                <button className="px-4 py-2 bg-[#242424] border border-[#333333] hover:bg-[#2a2a2a]" onClick={() => router.push("/complete-profile")}>Edit Profile</button>
-              </div>
+      <div className="px-4 md:px-0 w-[min(92vw,800px)] mx-auto">
+        <div className="mt-6 rounded-3xl bg-gradient-to-b from-neutral-900/60 to-neutral-900/30 backdrop-blur-xl border border-neutral-800 shadow-2xl shadow-black/40">
+          <div className="p-8 md:p-12">
+            <div className="flex flex-col items-center">
+              <Logo size={120} />
+              <div className="mt-4 text-2xl md:text-3xl font-semibold tracking-tight text-neutral-50">Your Profile</div>
+              <div className="text-sm md:text-base text-neutral-400">Manage your account details</div>
             </div>
-          ) : (
-            <div className="text-[#bdbdbd]">Loading profile...</div>
-          )}
+
+            {profile ? (
+              <div className="mt-8 rounded-2xl border border-neutral-800 bg-neutral-900/60">
+                <div className="divide-y divide-neutral-800">
+                  <Row label="Full Name" value={profile.full_name} />
+                  <Row label="Username" value={profile.username} />
+                  <Row label="Email" value={email} />
+                  <Row label="Phone" value={profile.phone_number} />
+                  <Row label="Date of Birth" value={profile.date_of_birth} />
+                </div>
+                <div className="p-4 md:p-6">
+                  <button className="w-full px-5 py-3 rounded-2xl bg-neutral-100 hover:bg-white text-neutral-900 font-semibold tracking-tight shadow-sm" onClick={() => router.push("/complete-profile")}>Edit Profile</button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-8 text-neutral-400">Loading profile...</div>
+            )}
+          </div>
         </div>
       </div>
     </Bg>
@@ -56,9 +66,9 @@ export default function ProfilePage() {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between">
-      <div className="text-[#bdbdbd]">{label}</div>
-      <div className="text-[#eaeaea] font-medium">{value}</div>
+    <div className="flex items-center justify-between px-4 md:px-6 py-3">
+      <div className="text-neutral-400">{label}</div>
+      <div className="text-neutral-100 font-medium">{value}</div>
     </div>
   );
 }

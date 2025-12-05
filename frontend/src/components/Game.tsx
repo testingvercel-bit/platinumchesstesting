@@ -317,7 +317,7 @@ export default function Game({ roomId }: { roomId: string }) {
               <button 
                 onClick={resign} 
                 disabled={gameOver} 
-                className="flex-1 py-2.5 text-gray-200 font-medium text-sm disabled:opacity-50"
+                className="px-3 py-2.5 text-gray-200 font-medium text-sm disabled:opacity-50"
                 aria-label="Resign"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -404,6 +404,16 @@ export default function Game({ roomId }: { roomId: string }) {
             </div>
           </div>
 
+          {/* Mobile: Player Info above moves */}
+          <div className="lg:hidden mx-0 mb-2 px-0 py-2 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="text-sm font-medium text-gray-200">{playerName}</div>
+            </div>
+            <div className={`text-lg font-mono font-semibold ${playerTime < 30000 ? 'text-red-400' : 'text-gray-200'}`}>
+              {fmt(playerTime)}
+            </div>
+          </div>
+
           <div className="lg:hidden mx-0 mb-2 px-0 py-2">
             <div className="flex items-center gap-2 justify-between">
               <button onClick={() => applyReplay(0)} disabled={replayIndex <= 0} className="p-2 hover:bg-[#3d3d37] disabled:opacity-30 disabled:hover:bg-transparent" aria-label="First">
@@ -426,16 +436,6 @@ export default function Game({ roomId }: { roomId: string }) {
             </div>
           </div>
 
-          {/* Mobile: Player Info */}
-          <div className="lg:hidden mx-0 mb-2 px-0 py-2 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="text-sm font-medium text-gray-200">{playerName}</div>
-            </div>
-            <div className={`text-lg font-mono font-semibold ${playerTime < 30000 ? 'text-red-400' : 'text-gray-200'}`}>
-              {fmt(playerTime)}
-            </div>
-          </div>
-
           
 
           {/* Mobile: Game Controls */}
@@ -444,7 +444,7 @@ export default function Game({ roomId }: { roomId: string }) {
               <button 
                 onClick={resign} 
                 disabled={gameOver} 
-                className="flex-1 py-2.5 text-gray-200 font-medium text-sm disabled:opacity-50"
+                className="px-3 py-2.5 text-gray-200 font-medium text-sm disabled:opacity-50"
                 aria-label="Resign"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
