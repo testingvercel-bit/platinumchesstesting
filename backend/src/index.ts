@@ -236,13 +236,33 @@ app.get("/payments/payfast/cancel", (_req, res) => {
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: { origin: "*" },
-  transports: ["websocket", "polling"],
+  transports: ["websocket"],
   pingTimeout: 30000,
-  pingInterval: 25000
+  pingInterval: 25000,
+  path: "/socket.io"
 });
 
 const rooms = new Map<string, Room>();
 const waitingQueues = new Map<string, { playerId: string; socketId: string; userId: string; stakeUsd: number }[]>();
+
+async function setupSocketAdapter() {
+  const url = process.env.REDIS_URL || "";
+  if (!url) return;
+  try {
+    const { createAdapter } = await import("@socket.io/redis-adapter");
+    const { createClient } = await import("redis");
+    const pub = createClient({ url });
+    const sub = pub.duplicate();
+    await pub.connect();
+    await sub.connect();
+    io.adapter(createAdapter(pub, sub));
+    console.log("Socket adapter: Redis enabled");
+  } catch (err) {
+    console.error("Socket adapter setup failed");
+  }
+}
+
+setupSocketAdapter().catch(() => {});
 
 function getOrCreateRoom(roomId: string): Room {
   let room = rooms.get(roomId);
@@ -461,15 +481,16 @@ io.on("connection", socket => {
     "makeMove",
     async (payload: { roomId: string; playerId: string; from: string; to: string; promotion?: string }) => {
       const { roomId, playerId, from, to, promotion } = payload;
+      console.log("makeMove:received", { roomId, playerId, from, to });
       const room = rooms.get(roomId);
-      if (!room) return;
-      if (room.over) return;
+      if (!room) { io.to(socket.id).emit("moveRejected", { reason: "room not found" }); return; }
+      if (room.over) { io.to(socket.id).emit("moveRejected", { reason: "game over" }); return; }
       const playerColor = colorForPlayer(room, playerId);
-      if (!playerColor) return;
+      if (!playerColor) { io.to(socket.id).emit("moveRejected", { reason: "not in room" }); return; }
       const turnColor = room.chess.turn() === "w" ? "white" : "black";
-      if (playerColor !== turnColor) return;
+      if (playerColor !== turnColor) { io.to(socket.id).emit("moveRejected", { reason: "not your turn" }); return; }
       const move = room.chess.move({ from, to, promotion: promotion as any });
-      if (!move) return;
+      if (!move) { io.to(socket.id).emit("moveRejected", { reason: "illegal move" }); return; }
       console.log("makeMove", { roomId, playerId, from, to, san: move.san });
       io.to(roomId).emit("moveMade", {
         from: move.from,

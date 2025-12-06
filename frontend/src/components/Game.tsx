@@ -53,10 +53,17 @@ export default function Game({ roomId }: { roomId: string }) {
   }, [messages]);
 
   useEffect(() => {
-    const socket = io({ transports: ["websocket", "polling"], reconnection: true, reconnectionAttempts: Infinity, reconnectionDelayMax: 5000 });
+    const socket = io({ transports: ["websocket"], path: "/socket.io", reconnection: true, reconnectionAttempts: Infinity, reconnectionDelayMax: 5000 });
     socketRef.current = socket;
     socket.on("connect", () => {
       socket.emit("joinGame", { roomId, playerId, name: meName, userId });
+    });
+    socket.on("connect_error", (err: any) => {
+      setStatus("Connection error");
+      console.debug("socket connect_error", err);
+    });
+    socket.on("error", (err: any) => {
+      console.debug("socket error", err);
     });
     socket.on("colorAssigned", (p: { color: Color }) => {
       setColor(p.color);
@@ -117,6 +124,10 @@ export default function Game({ roomId }: { roomId: string }) {
       setGameOver(true);
       setDrawOfferFrom(undefined);
       setDrawPending(false);
+    });
+    socket.on("moveRejected", (p: { reason?: string }) => {
+      setStatus(p.reason ? `Move rejected: ${p.reason}` : "Move rejected");
+      socket.emit("joinGame", { roomId, playerId, name: meName, userId });
     });
     socket.on("chatMessage", (m: { name?: string; text: string; ts: number }) => {
       setMessages(prev => [...prev, m].slice(-200));
@@ -587,6 +598,7 @@ function SyncBridge({ roomId, playerId, socket, lastServerFenRef, color, turn, i
     const last = hist[len - 1];
     if (last && last.from && last.to) {
       const promotion = last.promotion;
+      console.debug("emit makeMove", { roomId, playerId, from: last.from, to: last.to, promotion });
       socket.current?.emit("makeMove", { roomId, playerId, from: last.from, to: last.to, promotion });
     }
   }, [ctx.currentFen, ctx.currentMoveIndex, color, turn]);
