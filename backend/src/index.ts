@@ -313,6 +313,14 @@ function gameStatePayload(room: Room) {
   };
 }
 
+function isPlaceholderName(name: string | undefined, playerId: string | undefined) {
+  if (!name) return true;
+  if (!playerId) return false;
+  const short = String(playerId).slice(0, 6);
+  if (!short) return false;
+  return name === short || name === `Player-${short}` || name === `Opponent-${short}`;
+}
+
 function gameOverReason(chess: Chess) {
   if (chess.isCheckmate()) return "checkmate";
   if (chess.isStalemate()) return "stalemate";
@@ -454,14 +462,14 @@ io.on("connection", socket => {
     let whiteName = room.players.white?.name;
     let blackName = room.players.black?.name;
     
-    if (!whiteName && room.players.white?.userId && supabaseAdmin) {
+    if (isPlaceholderName(whiteName, room.players.white?.playerId) && room.players.white?.userId && supabaseAdmin) {
       try {
         const { data } = await supabaseAdmin.from("profiles").select("username").eq("id", room.players.white.userId).maybeSingle();
         whiteName = (data as any)?.username || undefined;
         if (whiteName && room.players.white) room.players.white.name = whiteName;
       } catch {}
     }
-    if (!blackName && room.players.black?.userId && supabaseAdmin) {
+    if (isPlaceholderName(blackName, room.players.black?.playerId) && room.players.black?.userId && supabaseAdmin) {
       try {
         const { data } = await supabaseAdmin.from("profiles").select("username").eq("id", room.players.black.userId).maybeSingle();
         blackName = (data as any)?.username || undefined;
@@ -469,8 +477,8 @@ io.on("connection", socket => {
       } catch {}
     }
     
-    const whiteFallback = whiteName || (room.players.white?.userId ? undefined : (room.players.white?.playerId ? String(room.players.white.playerId).slice(0, 6) : undefined));
-    const blackFallback = blackName || (room.players.black?.userId ? undefined : (room.players.black?.playerId ? String(room.players.black.playerId).slice(0, 6) : undefined));
+    const whiteFallback = whiteName || (room.players.white?.playerId ? `Player-${String(room.players.white.playerId).slice(0, 6)}` : undefined);
+    const blackFallback = blackName || (room.players.black?.playerId ? `Player-${String(room.players.black.playerId).slice(0, 6)}` : undefined);
     io.to(roomId).emit("playerNames", {
       white: whiteName || whiteFallback || undefined,
       black: blackName || blackFallback || undefined
@@ -488,14 +496,14 @@ io.on("connection", socket => {
     if (color === "black" && room.players.black) room.players.black.name = name;
     let whiteName = room.players.white?.name;
     let blackName = room.players.black?.name;
-    if (!whiteName && room.players.white?.userId && supabaseAdmin) {
+    if (isPlaceholderName(whiteName, room.players.white?.playerId) && room.players.white?.userId && supabaseAdmin) {
       try { const { data } = await supabaseAdmin.from("profiles").select("username").eq("id", room.players.white.userId).maybeSingle(); whiteName = (data as any)?.username || undefined; } catch {}
     }
-    if (!blackName && room.players.black?.userId && supabaseAdmin) {
+    if (isPlaceholderName(blackName, room.players.black?.playerId) && room.players.black?.userId && supabaseAdmin) {
       try { const { data } = await supabaseAdmin.from("profiles").select("username").eq("id", room.players.black.userId).maybeSingle(); blackName = (data as any)?.username || undefined; } catch {}
     }
-    const whiteFallback = whiteName || (room.players.white?.userId ? undefined : (room.players.white?.playerId ? String(room.players.white.playerId).slice(0, 6) : undefined));
-    const blackFallback = blackName || (room.players.black?.userId ? undefined : (room.players.black?.playerId ? String(room.players.black.playerId).slice(0, 6) : undefined));
+    const whiteFallback = whiteName || (room.players.white?.playerId ? `Player-${String(room.players.white.playerId).slice(0, 6)}` : undefined);
+    const blackFallback = blackName || (room.players.black?.playerId ? `Player-${String(room.players.black.playerId).slice(0, 6)}` : undefined);
     io.to(roomId).emit("playerNames", { white: whiteName || whiteFallback || undefined, black: blackName || blackFallback || undefined });
   });
 

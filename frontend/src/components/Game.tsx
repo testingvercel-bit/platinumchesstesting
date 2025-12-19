@@ -25,7 +25,9 @@ export default function Game({ roomId }: { roomId: string }) {
   const isReplayingRef = useRef<boolean>(false);
   const [meName, setMeName] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
-  const joinedWithUserRef = useRef<boolean>(false);
+  const meNameRef = useRef<string>("");
+  const userIdRef = useRef<string>("");
+  const lastJoinSigRef = useRef<string>("");
   const [whiteName, setWhiteName] = useState<string>("");
   const [blackName, setBlackName] = useState<string>("");
   const [messages, setMessages] = useState<{ name?: string; text: string; ts: number }[]>([]);
@@ -50,13 +52,20 @@ export default function Game({ roomId }: { roomId: string }) {
     if (typeof window !== "undefined") window.localStorage.setItem(key, id);
     return id;
   }, []);
+  const fallbackName = useMemo(() => `Player-${String(playerId).slice(0, 6)}`, [playerId]);
+
+  useEffect(() => {
+    meNameRef.current = meName;
+  }, [meName]);
+  useEffect(() => {
+    userIdRef.current = userId;
+  }, [userId]);
 
   useEffect(() => {
     if (!meName) {
-      const fallback = `Player-${String(playerId).slice(0, 6)}`;
-      setMeName(fallback);
+      setMeName(fallbackName);
     }
-  }, [playerId]);
+  }, [playerId, fallbackName]);
   useEffect(() => {
     if (messages.length > 0) {
       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -67,7 +76,9 @@ export default function Game({ roomId }: { roomId: string }) {
     const socket = io({ transports: ["websocket"], path: "/socket.io", reconnection: true, reconnectionAttempts: Infinity, reconnectionDelayMax: 5000 });
     socketRef.current = socket;
     socket.on("connect", () => {
-      socket.emit("joinGame", { roomId, playerId, name: meName, userId });
+      const name = meNameRef.current || fallbackName;
+      const uid = userIdRef.current;
+      socket.emit("joinGame", { roomId, playerId, name, userId: uid || undefined });
     });
     socket.on("connect_error", (err: any) => {
       setStatus("Connection error");
@@ -172,14 +183,16 @@ export default function Game({ roomId }: { roomId: string }) {
   useEffect(() => {
     const s = socketRef.current;
     if (!s || !s.connected) return;
-    if (userId && !joinedWithUserRef.current) {
-      s.emit("joinGame", { roomId, playerId, name: meName, userId });
-      joinedWithUserRef.current = true;
-    }
-  }, [userId, meName, roomId, playerId]);
+    const name = meNameRef.current || fallbackName;
+    const uid = userIdRef.current;
+    const sig = `${roomId}|${playerId}|${name}|${uid}`;
+    if (sig === lastJoinSigRef.current) return;
+    s.emit("joinGame", { roomId, playerId, name, userId: uid || undefined });
+    lastJoinSigRef.current = sig;
+  }, [userId, meName, roomId, playerId, fallbackName]);
 
   useEffect(() => {
-    if (socketRef.current) {
+    if (socketRef.current?.connected) {
       socketRef.current.emit("setName", { roomId, playerId, name: meName });
     }
   }, [meName, roomId, playerId]);
