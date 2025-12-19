@@ -420,15 +420,12 @@ io.on("connection", socket => {
     const room = getOrCreateRoom(roomId);
     socket.join(roomId);
 
-    // Idempotent join: Check if player is already in the room
     let assigned = colorForPlayer(room, playerId);
     
     if (assigned) {
-        // Player already exists, update socket ID
         if (assigned === "white" && room.players.white) room.players.white.socketId = socket.id;
         if (assigned === "black" && room.players.black) room.players.black.socketId = socket.id;
     } else {
-        // New player, assign color
         assigned = assignColor(room, playerId, socket.id);
     }
 
@@ -438,7 +435,6 @@ io.on("connection", socket => {
       io.to(socket.id).emit("colorAssigned", { color: assigned });
     }
     
-    // Update user details if provided
     if (assigned === "white" && room.players.white) { 
         if (userId) room.players.white.userId = userId; 
         if (name) room.players.white.name = name; 
@@ -448,10 +444,8 @@ io.on("connection", socket => {
         if (name) room.players.black.name = name; 
     }
 
-    // Send game state to the reconnecting/joining socket
     io.to(socket.id).emit("gameState", gameStatePayload(room));
 
-    // Resolve names if missing
     let whiteName = room.players.white?.name;
     let blackName = room.players.black?.name;
     
@@ -470,13 +464,11 @@ io.on("connection", socket => {
       } catch {}
     }
     
-    // Broadcast player names to the room (so everyone sees who is who)
     io.to(roomId).emit("playerNames", {
       white: whiteName || undefined,
       black: blackName || undefined
     });
     
-    // Also notify that a player joined/reconnected
     io.to(roomId).emit("playerJoined", { playerId, color: assigned });
   });
   socket.on("setName", async (payload: { roomId: string; playerId: string; name: string }) => {
@@ -522,7 +514,7 @@ io.on("connection", socket => {
       
       try {
         const move = room.chess.move({ from, to, promotion: promotion || undefined });
-        if (!move) throw new Error("illegal move"); // Should be caught by catch block if move throws, but for safety
+        if (!move) throw new Error("illegal move");
         
         console.log("makeMove", { roomId, playerId, from, to, san: move.san });
         io.to(roomId).emit("moveMade", {
@@ -536,7 +528,6 @@ io.on("connection", socket => {
           room.over = true;
           const reason = gameOverReason(room.chess);
           io.to(roomId).emit("gameOver", { reason });
-          // settle
           const loserColor = room.chess.turn() === "w" ? "white" : "black";
           const winnerColor = loserColor === "white" ? "black" : "white";
           await settleRoom(room, reason === "draw" ? null : winnerColor, reason);
