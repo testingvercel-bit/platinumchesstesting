@@ -43,6 +43,8 @@ export default function Game({ roomId }: { roomId: string }) {
   const chessRef = useRef<Chess>(new Chess());
   const lastServerFenRef = useRef<string>(fen);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const gameOverSoundedRef = useRef<boolean>(false);
   
   const playerId = useMemo(() => {
     const key = "platinumchess-player-id";
@@ -73,6 +75,41 @@ export default function Game({ roomId }: { roomId: string }) {
   }, [messages]);
 
   useEffect(() => {
+    const unlock = async () => {
+      if (audioCtxRef.current) return;
+      try {
+        const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+        if (!Ctx) return;
+        audioCtxRef.current = new Ctx();
+        if (audioCtxRef.current.state === "suspended") await audioCtxRef.current.resume();
+      } catch {}
+    };
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
+
+  function playTone(kind: "move" | "gameOver") {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(kind === "move" ? 620 : 240, now);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(kind === "move" ? 0.07 : 0.12, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + (kind === "move" ? 0.08 : 0.28));
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + (kind === "move" ? 0.09 : 0.29));
+  }
+
+  useEffect(() => {
     const socket = io({ transports: ["websocket"], path: "/socket.io", reconnection: true, reconnectionAttempts: Infinity, reconnectionDelayMax: 5000 });
     socketRef.current = socket;
     socket.on("connect", () => {
@@ -90,6 +127,7 @@ export default function Game({ roomId }: { roomId: string }) {
     socket.on("colorAssigned", (p: { color: Color }) => {
       setColor(p.color);
       setGameOver(false);
+      gameOverSoundedRef.current = false;
     });
     socket.on("gameState", (p: { fen: string; turn: Color; history: any[]; timeControl?: string; players?: { white?: string; black?: string }; stakePotUsd?: number }) => {
       console.debug("socket gameState", { turn: p.turn, histLen: (p.history || []).length });
@@ -108,6 +146,7 @@ export default function Game({ roomId }: { roomId: string }) {
       setStakePotUsd(Number(p.stakePotUsd || 0));
       setPlayers(p.players || {});
       joinedReadyRef.current = true;
+      if ((p.history || []).length === 0) gameOverSoundedRef.current = false;
       if (tc && !clocksInitializedRef.current) {
         const [base, inc] = tc.split("+").map(x => parseInt(x, 10));
         const baseMs = Math.max(0, (base || 0) * 60 * 1000);
@@ -123,7 +162,7 @@ export default function Game({ roomId }: { roomId: string }) {
       if (typeof names.white === "string") setWhiteName(names.white);
       if (typeof names.black === "string") setBlackName(names.black);
     });
-    socket.on("moveMade", (p: { fen: string; san?: string; history?: any[] }) => {
+    socket.on("moveMade", (p: { fen: string; san?: string; history?: any[]; from?: string; to?: string }) => {
       console.debug("socket moveMade", { san: p.san });
       try { chessRef.current.load(p.fen); } catch {}
       setFen(p.fen);
@@ -131,6 +170,7 @@ export default function Game({ roomId }: { roomId: string }) {
         setHistory(p.history);
         setReplayIndex((p.history || []).length);
       }
+      playTone("move");
       const mover = chessRef.current.turn() === "w" ? "black" : "white";
       if (mover === "white") setWhiteMs(ms => ms + incMsRef.current);
       else setBlackMs(ms => ms + incMsRef.current);
@@ -159,6 +199,10 @@ export default function Game({ roomId }: { roomId: string }) {
       setGameOver(true);
       setDrawOfferFrom(undefined);
       setDrawPending(false);
+      if (!gameOverSoundedRef.current) {
+        playTone("gameOver");
+        gameOverSoundedRef.current = true;
+      }
     });
     socket.on("moveRejected", (p: { reason?: string }) => {
       setStatus(p.reason ? `Move rejected: ${p.reason}` : "Move rejected");
@@ -301,6 +345,13 @@ export default function Game({ roomId }: { roomId: string }) {
   const playerName = color === "white" ? (whiteName || meName) : color === "black" ? (blackName || meName) : meName;
   const opponentTime = color === "white" ? blackMs : whiteMs;
   const playerTime = color === "white" ? whiteMs : blackMs;
+  const lastMove = useMemo(() => {
+    const idx = Math.min(replayIndex, history.length) - 1;
+    if (idx < 0) return null;
+    const m = history[idx] as any;
+    if (!m?.from || !m?.to) return null;
+    return { from: String(m.from), to: String(m.to) };
+  }, [history, replayIndex]);
 
   return (
     <div className="min-h-screen w-full bg-[#161512] pb-safe">
@@ -360,7 +411,7 @@ export default function Game({ roomId }: { roomId: string }) {
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6L12 12L6 18M12 6L18 12L12 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </button>
               </div>
-              <div className="max-h-[340px] overflow-y-auto custom-scrollbar">
+              <div className="max-h-[168px] overflow-y-auto custom-scrollbar">
                 <div className="grid grid-cols-2 gap-1 text-sm">
                   {history.map((m, i) => {
                     const moveNum = Math.floor(i / 2) + 1;
@@ -449,7 +500,7 @@ export default function Game({ roomId }: { roomId: string }) {
               )}
               <div className="relative w-full h-full overflow-hidden shadow-2xl">
                 <ChessGame.Root fen={fen} orientation={color === "black" ? "b" : "w"}>
-                  <BoardBridge fen={fen} color={color} />
+                  <BoardBridge fen={fen} color={color} lastMove={lastMove} />
                   <SyncBridge 
                     roomId={roomId} 
                     playerId={playerId} 
@@ -625,16 +676,22 @@ export default function Game({ roomId }: { roomId: string }) {
   );
 }
 
-function BoardBridge({ fen, color }: { fen: string; color: Color | undefined }) {
+function BoardBridge({ fen, color, lastMove }: { fen: string; color: Color | undefined; lastMove: { from: string; to: string } | null }) {
   const ctx = useChessGameContext();
   useEffect(() => {
     ctx.methods.setPosition(fen, color === "black" ? "b" : "w");
   }, [fen, color]);
+  const squareStyles = useMemo(() => {
+    if (!lastMove) return undefined;
+    const style = { backgroundColor: "rgba(235, 199, 0, 0.35)" } as const;
+    return { [lastMove.from]: style, [lastMove.to]: style };
+  }, [lastMove]);
   return (
     <ChessGame.Board
       options={{
         showNotation: true,
         animationDurationInMs: 300,
+        squareStyles,
       }}
     />
   );
