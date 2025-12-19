@@ -70,6 +70,7 @@ export default function Game({ roomId }: { roomId: string }) {
       setGameOver(false);
     });
     socket.on("gameState", (p: { fen: string; turn: Color; history: any[]; timeControl?: string; players?: { white?: string; black?: string }; stakePotUsd?: number }) => {
+      console.debug("socket gameState", { turn: p.turn, histLen: (p.history || []).length });
       chessRef.current.load(p.fen);
       setFen(p.fen);
       setStatus(`${p.turn} to move`);
@@ -97,11 +98,14 @@ export default function Game({ roomId }: { roomId: string }) {
       if (typeof names.white === "string") setWhiteName(names.white);
       if (typeof names.black === "string") setBlackName(names.black);
     });
-    socket.on("moveMade", (p: { fen: string; san?: string }) => {
-      chessRef.current.load(p.fen);
+    socket.on("moveMade", (p: { fen: string; san?: string; history?: any[] }) => {
+      console.debug("socket moveMade", { san: p.san });
+      try { chessRef.current.load(p.fen); } catch {}
       setFen(p.fen);
-      setHistory(chessRef.current.history({ verbose: true }) as any[]);
-      setReplayIndex((chessRef.current.history({ verbose: true }) as any[]).length);
+      if (Array.isArray(p.history)) {
+        setHistory(p.history);
+        setReplayIndex((p.history || []).length);
+      }
       const mover = chessRef.current.turn() === "w" ? "black" : "white";
       if (mover === "white") setWhiteMs(ms => ms + incMsRef.current);
       else setBlackMs(ms => ms + incMsRef.current);

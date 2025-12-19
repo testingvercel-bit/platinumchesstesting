@@ -521,9 +521,10 @@ io.on("connection", socket => {
           from: move.from,
           to: move.to,
           san: move.san,
-          fen: room.chess.fen()
+          fen: room.chess.fen(),
+          history: room.chess.history({ verbose: true })
         });
-        io.to(roomId).emit("gameState", gameStatePayload(room));
+        // gameState is no longer emitted for each move; clients rely on moveMade payload
         if (room.chess.isGameOver()) {
           room.over = true;
           const reason = gameOverReason(room.chess);
