@@ -33,6 +33,8 @@ export default function Game({ roomId }: { roomId: string }) {
   const [history, setHistory] = useState<any[]>([]);
   const [replayIndex, setReplayIndex] = useState<number>(0);
   const [players, setPlayers] = useState<{ white?: string; black?: string }>({});
+  const pendingRef = useRef<boolean>(false);
+  const pendingMoveKeyRef = useRef<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const chessRef = useRef<Chess>(new Chess());
   const lastServerFenRef = useRef<string>(fen);
@@ -122,6 +124,8 @@ export default function Game({ roomId }: { roomId: string }) {
       setStatus(`${nextTurn} to move`);
       lastServerFenRef.current = p.fen;
       lastTickRef.current = Date.now();
+      pendingRef.current = false;
+      pendingMoveKeyRef.current = null;
     });
     socket.on("drawOffered", (p: { from: Color }) => {
       setDrawOfferFrom(p.from);
@@ -148,6 +152,8 @@ export default function Game({ roomId }: { roomId: string }) {
       setFen(lastServerFenRef.current);
       const nextTurn = chessRef.current.turn() === "w" ? "white" : "black";
       setTurn(nextTurn);
+      pendingRef.current = false;
+      pendingMoveKeyRef.current = null;
     });
     socket.on("chatMessage", (m: { name?: string; text: string; ts: number }) => {
       setMessages(prev => [...prev, m].slice(-200));
@@ -618,6 +624,7 @@ function SyncBridge({ roomId, playerId, socket, lastServerFenRef, color, turn, i
   const ctx = useChessGameContext();
   const lastHistLenRef = useRef<number>((ctx.game.history({ verbose: true }) as any[]).length);
   const revertTimerRef = useRef<number | null>(null);
+  const pendingTimeoutRef = useRef<number | null>(null);
   useEffect(() => {
     const hist = ctx.game.history({ verbose: true }) as any[];
     const len = hist.length;
@@ -632,6 +639,12 @@ function SyncBridge({ roomId, playerId, socket, lastServerFenRef, color, turn, i
     const last = hist[len - 1];
     if (last && last.from && last.to) {
       const promotion = last.promotion;
+      const key = `${last.from}-${last.to}-${promotion || ""}`;
+      if (pendingRef.current && pendingMoveKeyRef.current === key) {
+        return;
+      }
+      pendingRef.current = true;
+      pendingMoveKeyRef.current = key;
       console.debug("emit makeMove", { roomId, playerId, from: last.from, to: last.to, promotion });
       socket.current?.emit("makeMove", { roomId, playerId, from: last.from, to: last.to, promotion });
       if (revertTimerRef.current) {
@@ -643,8 +656,19 @@ function SyncBridge({ roomId, playerId, socket, lastServerFenRef, color, turn, i
         if (lastServerFenRef.current === sentAtFen) {
           ctx.methods.setPosition(lastServerFenRef.current, color === "black" ? "b" : "w");
         }
+        pendingRef.current = false;
+        pendingMoveKeyRef.current = null;
         revertTimerRef.current = null;
       }, 750);
+      if (pendingTimeoutRef.current) {
+        clearTimeout(pendingTimeoutRef.current);
+        pendingTimeoutRef.current = null;
+      }
+      pendingTimeoutRef.current = window.setTimeout(() => {
+        pendingRef.current = false;
+        pendingMoveKeyRef.current = null;
+        pendingTimeoutRef.current = null;
+      }, 2000);
     }
   }, [ctx.currentFen, ctx.currentMoveIndex, color, turn]);
   return null;
