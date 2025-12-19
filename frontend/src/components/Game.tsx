@@ -32,6 +32,7 @@ export default function Game({ roomId }: { roomId: string }) {
   const [chatText, setChatText] = useState<string>("");
   const [history, setHistory] = useState<any[]>([]);
   const [replayIndex, setReplayIndex] = useState<number>(0);
+  const [players, setPlayers] = useState<{ white?: string; black?: string }>({});
   const socketRef = useRef<Socket | null>(null);
   const chessRef = useRef<Chess>(new Chess());
   const lastServerFenRef = useRef<string>(fen);
@@ -46,6 +47,12 @@ export default function Game({ roomId }: { roomId: string }) {
     return id;
   }, []);
 
+  useEffect(() => {
+    if (!meName) {
+      const fallback = `Player-${String(playerId).slice(0, 6)}`;
+      setMeName(fallback);
+    }
+  }, [playerId]);
   useEffect(() => {
     if (messages.length > 0) {
       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -83,6 +90,7 @@ export default function Game({ roomId }: { roomId: string }) {
       const tc = p.timeControl || "";
       setTimeControl(tc);
       setStakePotUsd(Number(p.stakePotUsd || 0));
+      setPlayers(p.players || {});
       if (tc && !clocksInitializedRef.current) {
         const [base, inc] = tc.split("+").map(x => parseInt(x, 10));
         const baseMs = Math.max(0, (base || 0) * 60 * 1000);
@@ -255,7 +263,11 @@ export default function Game({ roomId }: { roomId: string }) {
     socketRef.current?.emit("declineDraw", { roomId, playerId });
   }
 
-  const opponentName = color === "white" ? (blackName || "Opponent") : color === "black" ? (whiteName || "Opponent") : "Opponent";
+  const opponentName = color === "white"
+    ? (blackName || (players.black ? `Opponent-${String(players.black).slice(0, 6)}` : "Opponent"))
+    : color === "black"
+    ? (whiteName || (players.white ? `Opponent-${String(players.white).slice(0, 6)}` : "Opponent"))
+    : "Opponent";
   const playerName = color === "white" ? (whiteName || meName) : color === "black" ? (blackName || meName) : meName;
   const opponentTime = color === "white" ? blackMs : whiteMs;
   const playerTime = color === "white" ? whiteMs : blackMs;
@@ -421,7 +433,15 @@ export default function Game({ roomId }: { roomId: string }) {
                   {color && turn && color === turn && <ChessGame.KeyboardControls />}
                 </ChessGame.Root>
                 {(!color || !turn || color !== turn) && (
-                  <div className="absolute inset-0" style={{ pointerEvents: "auto", cursor: "default" }} />
+                  <div
+                    className="absolute inset-0"
+                    style={{ pointerEvents: "auto", cursor: "default" }}
+                    onPointerDown={e => { e.preventDefault(); e.stopPropagation(); }}
+                    onPointerMove={e => { e.preventDefault(); e.stopPropagation(); }}
+                    onPointerUp={e => { e.preventDefault(); e.stopPropagation(); }}
+                    onWheel={e => { e.preventDefault(); e.stopPropagation(); }}
+                    onContextMenu={e => { e.preventDefault(); e.stopPropagation(); }}
+                  />
                 )}
               </div>
             </div>
@@ -597,6 +617,7 @@ function SyncBridge({ roomId, playerId, socket, lastServerFenRef, color, turn, i
 }) {
   const ctx = useChessGameContext();
   const lastHistLenRef = useRef<number>((ctx.game.history({ verbose: true }) as any[]).length);
+  const revertTimerRef = useRef<number | null>(null);
   useEffect(() => {
     const hist = ctx.game.history({ verbose: true }) as any[];
     const len = hist.length;
@@ -613,6 +634,17 @@ function SyncBridge({ roomId, playerId, socket, lastServerFenRef, color, turn, i
       const promotion = last.promotion;
       console.debug("emit makeMove", { roomId, playerId, from: last.from, to: last.to, promotion });
       socket.current?.emit("makeMove", { roomId, playerId, from: last.from, to: last.to, promotion });
+      if (revertTimerRef.current) {
+        clearTimeout(revertTimerRef.current);
+        revertTimerRef.current = null;
+      }
+      const sentAtFen = lastServerFenRef.current;
+      revertTimerRef.current = window.setTimeout(() => {
+        if (lastServerFenRef.current === sentAtFen) {
+          ctx.methods.setPosition(lastServerFenRef.current, color === "black" ? "b" : "w");
+        }
+        revertTimerRef.current = null;
+      }, 750);
     }
   }, [ctx.currentFen, ctx.currentMoveIndex, color, turn]);
   return null;

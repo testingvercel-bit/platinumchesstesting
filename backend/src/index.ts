@@ -469,9 +469,11 @@ io.on("connection", socket => {
       } catch {}
     }
     
+    const whiteFallback = whiteName || (room.players.white?.userId ? undefined : (room.players.white?.playerId ? String(room.players.white.playerId).slice(0, 6) : undefined));
+    const blackFallback = blackName || (room.players.black?.userId ? undefined : (room.players.black?.playerId ? String(room.players.black.playerId).slice(0, 6) : undefined));
     io.to(roomId).emit("playerNames", {
-      white: whiteName || undefined,
-      black: blackName || undefined
+      white: whiteName || whiteFallback || undefined,
+      black: blackName || blackFallback || undefined
     });
     
     io.to(roomId).emit("playerJoined", { playerId, color: assigned });
@@ -492,7 +494,9 @@ io.on("connection", socket => {
     if (!blackName && room.players.black?.userId && supabaseAdmin) {
       try { const { data } = await supabaseAdmin.from("profiles").select("username").eq("id", room.players.black.userId).maybeSingle(); blackName = (data as any)?.username || undefined; } catch {}
     }
-    io.to(roomId).emit("playerNames", { white: whiteName || undefined, black: blackName || undefined });
+    const whiteFallback = whiteName || (room.players.white?.userId ? undefined : (room.players.white?.playerId ? String(room.players.white.playerId).slice(0, 6) : undefined));
+    const blackFallback = blackName || (room.players.black?.userId ? undefined : (room.players.black?.playerId ? String(room.players.black.playerId).slice(0, 6) : undefined));
+    io.to(roomId).emit("playerNames", { white: whiteName || whiteFallback || undefined, black: blackName || blackFallback || undefined });
   });
 
   socket.on("sendChat", (payload: { roomId: string; playerId: string; text: string; name?: string }) => {
