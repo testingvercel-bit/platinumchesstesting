@@ -33,6 +33,7 @@ export default function Game({ roomId }: { roomId: string }) {
   const [history, setHistory] = useState<any[]>([]);
   const [replayIndex, setReplayIndex] = useState<number>(0);
   const [players, setPlayers] = useState<{ white?: string; black?: string }>({});
+  const [pendingMove, setPendingMove] = useState<boolean>(false);
   const pendingRef = useRef<boolean>(false);
   const pendingMoveKeyRef = useRef<string | null>(null);
   const joinedReadyRef = useRef<boolean>(false);
@@ -87,6 +88,7 @@ export default function Game({ roomId }: { roomId: string }) {
       setTurn(p.turn);
       setDrawOfferFrom(undefined);
       setDrawPending(false);
+      setPendingMove(false);
       lastServerFenRef.current = p.fen;
       setHistory(p.history || []);
       setReplayIndex((p.history || []).length);
@@ -128,6 +130,7 @@ export default function Game({ roomId }: { roomId: string }) {
       lastTickRef.current = Date.now();
       pendingRef.current = false;
       pendingMoveKeyRef.current = null;
+      setPendingMove(false);
     });
     socket.on("drawOffered", (p: { from: Color }) => {
       setDrawOfferFrom(p.from);
@@ -156,6 +159,7 @@ export default function Game({ roomId }: { roomId: string }) {
       setTurn(nextTurn);
       pendingRef.current = false;
       pendingMoveKeyRef.current = null;
+      setPendingMove(false);
     });
     socket.on("chatMessage", (m: { name?: string; text: string; ts: number }) => {
       setMessages(prev => [...prev, m].slice(-200));
@@ -439,11 +443,12 @@ export default function Game({ roomId }: { roomId: string }) {
                     pendingRef={pendingRef}
                     pendingMoveKeyRef={pendingMoveKeyRef}
                     joinedReadyRef={joinedReadyRef}
+                    setPendingMove={setPendingMove}
                   />
                   <ChessGame.Sounds />
                   {color && turn && color === turn && <ChessGame.KeyboardControls />}
                 </ChessGame.Root>
-                {(!color || !turn || color !== turn) && (
+                {(!color || !turn || color !== turn || pendingMove) && (
                   <div
                     className="absolute inset-0"
                     style={{ pointerEvents: "auto", cursor: "default" }}
@@ -617,7 +622,7 @@ function BoardBridge({ fen, color }: { fen: string; color: Color | undefined }) 
   );
 }
 
-function SyncBridge({ roomId, playerId, socket, lastServerFenRef, color, turn, isReplayingRef, pendingRef, pendingMoveKeyRef, joinedReadyRef }: { 
+function SyncBridge({ roomId, playerId, socket, lastServerFenRef, color, turn, isReplayingRef, pendingRef, pendingMoveKeyRef, joinedReadyRef, setPendingMove }: { 
   roomId: string; 
   playerId: string; 
   socket: React.MutableRefObject<Socket | null>; 
@@ -628,61 +633,80 @@ function SyncBridge({ roomId, playerId, socket, lastServerFenRef, color, turn, i
   pendingRef: React.MutableRefObject<boolean>;
   pendingMoveKeyRef: React.MutableRefObject<string | null>;
   joinedReadyRef: React.MutableRefObject<boolean>;
+  setPendingMove: (v: boolean) => void;
 }) {
   const ctx = useChessGameContext();
   const lastHistLenRef = useRef<number>((ctx.game.history({ verbose: true }) as any[]).length);
   const revertTimerRef = useRef<number | null>(null);
-  const pendingTimeoutRef = useRef<number | null>(null);
+  const hardRevertTimerRef = useRef<number | null>(null);
   useEffect(() => {
-    const hist = ctx.game.history({ verbose: true }) as any[];
-    const len = hist.length;
-    if (len === lastHistLenRef.current) return;
-    lastHistLenRef.current = len;
-    if (isReplayingRef.current) return;
-    if (ctx.currentFen === lastServerFenRef.current) return;
-    if (!color || !turn || color !== turn) {
-      ctx.methods.setPosition(lastServerFenRef.current, color === "black" ? "b" : "w");
-      return;
-    }
-    if (!joinedReadyRef.current) {
-      ctx.methods.setPosition(lastServerFenRef.current, color === "black" ? "b" : "w");
-      return;
-    }
-    const last = hist[len - 1];
-    if (last && last.from && last.to) {
-      const promotion = last.promotion;
-      const key = `${last.from}-${last.to}-${promotion || ""}`;
-      if (pendingRef.current && pendingMoveKeyRef.current === key) {
-        return;
-      }
-      pendingRef.current = true;
-      pendingMoveKeyRef.current = key;
-      console.debug("emit makeMove", { roomId, playerId, from: last.from, to: last.to, promotion });
-      socket.current?.emit("makeMove", { roomId, playerId, from: last.from, to: last.to, promotion });
+    const clearTimers = () => {
       if (revertTimerRef.current) {
         clearTimeout(revertTimerRef.current);
         revertTimerRef.current = null;
       }
-      const sentAtFen = lastServerFenRef.current;
-      revertTimerRef.current = window.setTimeout(() => {
-        if (lastServerFenRef.current === sentAtFen) {
-          ctx.methods.setPosition(lastServerFenRef.current, color === "black" ? "b" : "w");
-          socket.current?.emit("requestState", { roomId });
-        }
-        pendingRef.current = false;
-        pendingMoveKeyRef.current = null;
-        revertTimerRef.current = null;
-      }, 1200);
-      if (pendingTimeoutRef.current) {
-        clearTimeout(pendingTimeoutRef.current);
-        pendingTimeoutRef.current = null;
+      if (hardRevertTimerRef.current) {
+        clearTimeout(hardRevertTimerRef.current);
+        hardRevertTimerRef.current = null;
       }
-      pendingTimeoutRef.current = window.setTimeout(() => {
-        pendingRef.current = false;
-        pendingMoveKeyRef.current = null;
-        pendingTimeoutRef.current = null;
-      }, 2000);
+    };
+
+    const hist = ctx.game.history({ verbose: true }) as any[];
+    const len = hist.length;
+    if (len !== lastHistLenRef.current) {
+      lastHistLenRef.current = len;
+
+      const shouldIgnore =
+        isReplayingRef.current ||
+        ctx.currentFen === lastServerFenRef.current;
+
+      if (!shouldIgnore) {
+        const shouldRevert =
+          !color ||
+          !turn ||
+          color !== turn ||
+          !joinedReadyRef.current;
+
+        if (shouldRevert) {
+          ctx.methods.setPosition(lastServerFenRef.current, color === "black" ? "b" : "w");
+        } else {
+          const last = hist[len - 1];
+          if (last && last.from && last.to) {
+            const promotion = last.promotion;
+            const key = `${last.from}-${last.to}-${promotion || ""}`;
+            if (!(pendingRef.current && pendingMoveKeyRef.current === key)) {
+              pendingRef.current = true;
+              pendingMoveKeyRef.current = key;
+              setPendingMove(true);
+              console.debug("emit makeMove", { roomId, playerId, from: last.from, to: last.to, promotion });
+              socket.current?.emit("makeMove", { roomId, playerId, from: last.from, to: last.to, promotion });
+
+              clearTimers();
+
+              const sentAtFen = lastServerFenRef.current;
+              revertTimerRef.current = window.setTimeout(() => {
+                if (lastServerFenRef.current === sentAtFen) {
+                  socket.current?.emit("requestState", { roomId });
+                }
+                revertTimerRef.current = null;
+              }, 2000);
+
+              hardRevertTimerRef.current = window.setTimeout(() => {
+                if (pendingRef.current && lastServerFenRef.current === sentAtFen) {
+                  socket.current?.emit("requestState", { roomId });
+                }
+                pendingRef.current = false;
+                pendingMoveKeyRef.current = null;
+                setPendingMove(false);
+                hardRevertTimerRef.current = null;
+              }, 8000);
+            }
+          }
+        }
+      }
     }
+
+    return clearTimers;
   }, [ctx.currentFen, ctx.currentMoveIndex, color, turn]);
   return null;
 }
