@@ -489,24 +489,31 @@ io.on("connection", socket => {
       if (!playerColor) { io.to(socket.id).emit("moveRejected", { reason: "not in room" }); return; }
       const turnColor = room.chess.turn() === "w" ? "white" : "black";
       if (playerColor !== turnColor) { io.to(socket.id).emit("moveRejected", { reason: "not your turn" }); return; }
-      const move = room.chess.move({ from, to, promotion: promotion as any });
-      if (!move) { io.to(socket.id).emit("moveRejected", { reason: "illegal move" }); return; }
-      console.log("makeMove", { roomId, playerId, from, to, san: move.san });
-      io.to(roomId).emit("moveMade", {
-        from: move.from,
-        to: move.to,
-        san: move.san,
-        fen: room.chess.fen()
-      });
-      io.to(roomId).emit("gameState", gameStatePayload(room));
-      if (room.chess.isGameOver()) {
-        room.over = true;
-        const reason = gameOverReason(room.chess);
-        io.to(roomId).emit("gameOver", { reason });
-        // settle
-        const loserColor = room.chess.turn() === "w" ? "white" : "black";
-        const winnerColor = loserColor === "white" ? "black" : "white";
-        await settleRoom(room, reason === "draw" ? null : winnerColor, reason);
+      
+      try {
+        const move = room.chess.move({ from, to, promotion: promotion || undefined });
+        if (!move) throw new Error("illegal move"); // Should be caught by catch block if move throws, but for safety
+        
+        console.log("makeMove", { roomId, playerId, from, to, san: move.san });
+        io.to(roomId).emit("moveMade", {
+          from: move.from,
+          to: move.to,
+          san: move.san,
+          fen: room.chess.fen()
+        });
+        io.to(roomId).emit("gameState", gameStatePayload(room));
+        if (room.chess.isGameOver()) {
+          room.over = true;
+          const reason = gameOverReason(room.chess);
+          io.to(roomId).emit("gameOver", { reason });
+          // settle
+          const loserColor = room.chess.turn() === "w" ? "white" : "black";
+          const winnerColor = loserColor === "white" ? "black" : "white";
+          await settleRoom(room, reason === "draw" ? null : winnerColor, reason);
+        }
+      } catch (err: any) {
+        console.error("makeMove error", err);
+        io.to(socket.id).emit("moveRejected", { reason: "illegal move" });
       }
     }
   );
