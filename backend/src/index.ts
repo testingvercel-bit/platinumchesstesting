@@ -419,17 +419,42 @@ io.on("connection", socket => {
     const { roomId, playerId, name, userId } = payload;
     const room = getOrCreateRoom(roomId);
     socket.join(roomId);
-    const assigned = assignColor(room, playerId, socket.id);
-    console.log("joinGame", { roomId, playerId, assigned });
+
+    // Idempotent join: Check if player is already in the room
+    let assigned = colorForPlayer(room, playerId);
+    
+    if (assigned) {
+        // Player already exists, update socket ID
+        if (assigned === "white" && room.players.white) room.players.white.socketId = socket.id;
+        if (assigned === "black" && room.players.black) room.players.black.socketId = socket.id;
+    } else {
+        // New player, assign color
+        assigned = assignColor(room, playerId, socket.id);
+    }
+
+    console.log("joinGame", { roomId, playerId, assigned, socketId: socket.id });
+    
     if (assigned) {
       io.to(socket.id).emit("colorAssigned", { color: assigned });
     }
-    const color = colorForPlayer(room, playerId);
-    if (color === "white" && room.players.white) { room.players.white.userId = userId; if (name) room.players.white.name = name; }
-    if (color === "black" && room.players.black) { room.players.black.userId = userId; if (name) room.players.black.name = name; }
+    
+    // Update user details if provided
+    if (assigned === "white" && room.players.white) { 
+        if (userId) room.players.white.userId = userId; 
+        if (name) room.players.white.name = name; 
+    }
+    if (assigned === "black" && room.players.black) { 
+        if (userId) room.players.black.userId = userId; 
+        if (name) room.players.black.name = name; 
+    }
+
+    // Send game state to the reconnecting/joining socket
     io.to(socket.id).emit("gameState", gameStatePayload(room));
+
+    // Resolve names if missing
     let whiteName = room.players.white?.name;
     let blackName = room.players.black?.name;
+    
     if (!whiteName && room.players.white?.userId && supabaseAdmin) {
       try {
         const { data } = await supabaseAdmin.from("profiles").select("username").eq("id", room.players.white.userId).maybeSingle();
@@ -444,10 +469,15 @@ io.on("connection", socket => {
         if (blackName && room.players.black) room.players.black.name = blackName;
       } catch {}
     }
+    
+    // Broadcast player names to the room (so everyone sees who is who)
     io.to(roomId).emit("playerNames", {
       white: whiteName || undefined,
       black: blackName || undefined
     });
+    
+    // Also notify that a player joined/reconnected
+    io.to(roomId).emit("playerJoined", { playerId, color: assigned });
   });
   socket.on("setName", async (payload: { roomId: string; playerId: string; name: string }) => {
     const { roomId, playerId, name } = payload;

@@ -56,6 +56,7 @@ export default function Game({ roomId }: { roomId: string }) {
     const socket = io({ transports: ["websocket"], path: "/socket.io", reconnection: true, reconnectionAttempts: Infinity, reconnectionDelayMax: 5000 });
     socketRef.current = socket;
     socket.on("connect", () => {
+      // Re-join on connect/reconnect
       socket.emit("joinGame", { roomId, playerId, name: meName, userId });
     });
     socket.on("connect_error", (err: any) => {
@@ -140,6 +141,7 @@ export default function Game({ roomId }: { roomId: string }) {
   useEffect(() => {
     const s = socketRef.current;
     if (!s || !s.connected) return;
+    // Only join if not already joined or if socket ID changed (reconnect)
     if (userId && !joinedWithUserRef.current) {
       s.emit("joinGame", { roomId, playerId, name: meName, userId });
       joinedWithUserRef.current = true;
