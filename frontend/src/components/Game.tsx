@@ -197,6 +197,9 @@ export default function Game({ roomId }: { roomId: string }) {
 
   useEffect(() => {
     if (gameOver) return;
+    if (!timeControl || !clocksInitializedRef.current) return;
+    if (whiteMs <= 0 && blackMs <= 0) return;
+    lastTickRef.current = Date.now();
     const t = setInterval(() => {
       const turnColor = chessRef.current.turn() === "w" ? "white" : "black";
       const now = Date.now();
@@ -204,6 +207,7 @@ export default function Game({ roomId }: { roomId: string }) {
       lastTickRef.current = now;
       if (turnColor === "white") {
         setWhiteMs(ms => {
+          if (ms <= 0) return 0;
           const next = ms - delta;
           if (next <= 0) {
             socketRef.current?.emit("flag", { roomId, loser: "white" });
@@ -213,6 +217,7 @@ export default function Game({ roomId }: { roomId: string }) {
         });
       } else {
         setBlackMs(ms => {
+          if (ms <= 0) return 0;
           const next = ms - delta;
           if (next <= 0) {
             socketRef.current?.emit("flag", { roomId, loser: "black" });
@@ -223,7 +228,7 @@ export default function Game({ roomId }: { roomId: string }) {
       }
     }, 200);
     return () => clearInterval(t);
-  }, [roomId, gameOver]);
+  }, [roomId, gameOver, timeControl, whiteMs, blackMs]);
 
   function fmt(ms: number) {
     const total = Math.max(0, Math.floor(ms / 1000));

@@ -566,6 +566,9 @@ io.on("connection", socket => {
     const { roomId, loser } = payload;
     const room = rooms.get(roomId);
     if (!room || room.over) return;
+    const ageMs = Date.now() - room.createdAt;
+    const plyCount = room.chess.history().length;
+    if (ageMs < 5000 && plyCount === 0) return;
     room.over = true;
     io.to(roomId).emit("gameOver", { reason: "timeout", loser });
     const winnerColor = loser === "white" ? "black" : "white";
