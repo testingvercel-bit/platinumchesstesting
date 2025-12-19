@@ -434,6 +434,8 @@ export default function Game({ roomId }: { roomId: string }) {
                     color={color} 
                     turn={turn} 
                     isReplayingRef={isReplayingRef} 
+                    pendingRef={pendingRef}
+                    pendingMoveKeyRef={pendingMoveKeyRef}
                   />
                   <ChessGame.Sounds />
                   {color && turn && color === turn && <ChessGame.KeyboardControls />}
@@ -612,14 +614,16 @@ function BoardBridge({ fen, color }: { fen: string; color: Color | undefined }) 
   );
 }
 
-function SyncBridge({ roomId, playerId, socket, lastServerFenRef, color, turn, isReplayingRef }: { 
+function SyncBridge({ roomId, playerId, socket, lastServerFenRef, color, turn, isReplayingRef, pendingRef, pendingMoveKeyRef }: { 
   roomId: string; 
   playerId: string; 
   socket: React.MutableRefObject<Socket | null>; 
   lastServerFenRef: React.MutableRefObject<string>; 
   color: Color | undefined; 
   turn: Color | undefined; 
-  isReplayingRef: React.MutableRefObject<boolean> 
+  isReplayingRef: React.MutableRefObject<boolean>;
+  pendingRef: React.MutableRefObject<boolean>;
+  pendingMoveKeyRef: React.MutableRefObject<string | null>;
 }) {
   const ctx = useChessGameContext();
   const lastHistLenRef = useRef<number>((ctx.game.history({ verbose: true }) as any[]).length);
