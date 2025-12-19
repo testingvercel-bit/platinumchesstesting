@@ -418,6 +418,8 @@ io.on("connection", socket => {
   socket.on("joinGame", async (payload: { roomId: string; playerId: string; name?: string; userId?: string }) => {
     const { roomId, playerId, name, userId } = payload;
     const room = getOrCreateRoom(roomId);
+    const prevRoomId = socket.data.roomId as string | undefined;
+    if (prevRoomId && prevRoomId !== roomId) socket.leave(prevRoomId);
     socket.join(roomId);
 
     let assigned = colorForPlayer(room, playerId);
@@ -434,6 +436,9 @@ io.on("connection", socket => {
     if (assigned) {
       io.to(socket.id).emit("colorAssigned", { color: assigned });
     }
+    socket.data.roomId = roomId;
+    socket.data.playerId = playerId;
+    socket.data.color = assigned;
     
     if (assigned === "white" && room.players.white) { 
         if (userId) room.players.white.userId = userId; 
@@ -502,12 +507,17 @@ io.on("connection", socket => {
   socket.on(
     "makeMove",
     async (payload: { roomId: string; playerId: string; from: string; to: string; promotion?: string }) => {
-      const { roomId, playerId, from, to, promotion } = payload;
-      console.log("makeMove:received", { roomId, playerId, from, to });
+      const { roomId, from, to, promotion } = payload;
+      const boundRoomId = socket.data.roomId as string | undefined;
+      const boundPlayerId = socket.data.playerId as string | undefined;
+      console.log("makeMove:received", { roomId, playerId: boundPlayerId, from, to, socketId: socket.id });
+      if (!boundRoomId || !boundPlayerId) { io.to(socket.id).emit("moveRejected", { reason: "not joined" }); return; }
+      if (boundRoomId !== roomId) { io.to(socket.id).emit("moveRejected", { reason: "wrong room" }); return; }
+      if (!socket.rooms.has(roomId)) { io.to(socket.id).emit("moveRejected", { reason: "not in room" }); return; }
       const room = rooms.get(roomId);
       if (!room) { io.to(socket.id).emit("moveRejected", { reason: "room not found" }); return; }
       if (room.over) { io.to(socket.id).emit("moveRejected", { reason: "game over" }); return; }
-      const playerColor = colorForPlayer(room, playerId);
+      const playerColor = colorForPlayer(room, boundPlayerId);
       if (!playerColor) { io.to(socket.id).emit("moveRejected", { reason: "not in room" }); return; }
       const turnColor = room.chess.turn() === "w" ? "white" : "black";
       if (playerColor !== turnColor) { io.to(socket.id).emit("moveRejected", { reason: "not your turn" }); return; }
@@ -516,7 +526,7 @@ io.on("connection", socket => {
         const move = room.chess.move({ from, to, promotion: promotion || undefined });
         if (!move) throw new Error("illegal move");
         
-        console.log("makeMove", { roomId, playerId, from, to, san: move.san });
+        console.log("makeMove", { roomId, playerId: boundPlayerId, from, to, san: move.san });
         io.to(roomId).emit("moveMade", {
           from: move.from,
           to: move.to,

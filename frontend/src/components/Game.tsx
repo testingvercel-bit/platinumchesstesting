@@ -603,6 +603,7 @@ function SyncBridge({ roomId, playerId, socket, lastServerFenRef, color, turn, i
     if (len === lastHistLenRef.current) return;
     lastHistLenRef.current = len;
     if (isReplayingRef.current) return;
+    if (ctx.currentFen === lastServerFenRef.current) return;
     if (!color || !turn || color !== turn) {
       ctx.methods.setPosition(lastServerFenRef.current, color === "black" ? "b" : "w");
       return;
