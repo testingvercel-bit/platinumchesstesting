@@ -35,6 +35,7 @@ export default function Game({ roomId }: { roomId: string }) {
   const [players, setPlayers] = useState<{ white?: string; black?: string }>({});
   const pendingRef = useRef<boolean>(false);
   const pendingMoveKeyRef = useRef<string | null>(null);
+  const joinedReadyRef = useRef<boolean>(false);
   const socketRef = useRef<Socket | null>(null);
   const chessRef = useRef<Chess>(new Chess());
   const lastServerFenRef = useRef<string>(fen);
@@ -93,6 +94,7 @@ export default function Game({ roomId }: { roomId: string }) {
       setTimeControl(tc);
       setStakePotUsd(Number(p.stakePotUsd || 0));
       setPlayers(p.players || {});
+      joinedReadyRef.current = true;
       if (tc && !clocksInitializedRef.current) {
         const [base, inc] = tc.split("+").map(x => parseInt(x, 10));
         const baseMs = Math.max(0, (base || 0) * 60 * 1000);
@@ -436,6 +438,7 @@ export default function Game({ roomId }: { roomId: string }) {
                     isReplayingRef={isReplayingRef} 
                     pendingRef={pendingRef}
                     pendingMoveKeyRef={pendingMoveKeyRef}
+                    joinedReadyRef={joinedReadyRef}
                   />
                   <ChessGame.Sounds />
                   {color && turn && color === turn && <ChessGame.KeyboardControls />}
@@ -614,7 +617,7 @@ function BoardBridge({ fen, color }: { fen: string; color: Color | undefined }) 
   );
 }
 
-function SyncBridge({ roomId, playerId, socket, lastServerFenRef, color, turn, isReplayingRef, pendingRef, pendingMoveKeyRef }: { 
+function SyncBridge({ roomId, playerId, socket, lastServerFenRef, color, turn, isReplayingRef, pendingRef, pendingMoveKeyRef, joinedReadyRef }: { 
   roomId: string; 
   playerId: string; 
   socket: React.MutableRefObject<Socket | null>; 
@@ -624,6 +627,7 @@ function SyncBridge({ roomId, playerId, socket, lastServerFenRef, color, turn, i
   isReplayingRef: React.MutableRefObject<boolean>;
   pendingRef: React.MutableRefObject<boolean>;
   pendingMoveKeyRef: React.MutableRefObject<string | null>;
+  joinedReadyRef: React.MutableRefObject<boolean>;
 }) {
   const ctx = useChessGameContext();
   const lastHistLenRef = useRef<number>((ctx.game.history({ verbose: true }) as any[]).length);
@@ -637,6 +641,10 @@ function SyncBridge({ roomId, playerId, socket, lastServerFenRef, color, turn, i
     if (isReplayingRef.current) return;
     if (ctx.currentFen === lastServerFenRef.current) return;
     if (!color || !turn || color !== turn) {
+      ctx.methods.setPosition(lastServerFenRef.current, color === "black" ? "b" : "w");
+      return;
+    }
+    if (!joinedReadyRef.current) {
       ctx.methods.setPosition(lastServerFenRef.current, color === "black" ? "b" : "w");
       return;
     }
@@ -659,11 +667,12 @@ function SyncBridge({ roomId, playerId, socket, lastServerFenRef, color, turn, i
       revertTimerRef.current = window.setTimeout(() => {
         if (lastServerFenRef.current === sentAtFen) {
           ctx.methods.setPosition(lastServerFenRef.current, color === "black" ? "b" : "w");
+          socket.current?.emit("requestState", { roomId });
         }
         pendingRef.current = false;
         pendingMoveKeyRef.current = null;
         revertTimerRef.current = null;
-      }, 750);
+      }, 1200);
       if (pendingTimeoutRef.current) {
         clearTimeout(pendingTimeoutRef.current);
         pendingTimeoutRef.current = null;
