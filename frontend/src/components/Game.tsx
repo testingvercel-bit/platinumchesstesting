@@ -7,6 +7,13 @@ import { getSupabase } from "@/lib/supabaseClient";
 
 type Color = "white" | "black";
 
+interface Move {
+  from: string;
+  to: string;
+  promotion?: string;
+  san: string;
+}
+
 export default function Game({ roomId }: { roomId: string }) {
   const [color, setColor] = useState<Color | undefined>(undefined);
   const [fen, setFen] = useState<string>(new Chess().fen());
@@ -32,7 +39,7 @@ export default function Game({ roomId }: { roomId: string }) {
   const [blackName, setBlackName] = useState<string>("");
   const [messages, setMessages] = useState<{ name?: string; text: string; ts: number }[]>([]);
   const [chatText, setChatText] = useState<string>("");
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<Move[]>([]);
   const [replayIndex, setReplayIndex] = useState<number>(0);
   const [players, setPlayers] = useState<{ white?: string; black?: string }>({});
   const [pendingMove, setPendingMove] = useState<boolean>(false);
@@ -67,7 +74,7 @@ export default function Game({ roomId }: { roomId: string }) {
     if (!meName) {
       setMeName(fallbackName);
     }
-  }, [playerId, fallbackName]);
+  }, [playerId, fallbackName, meName]);
   useEffect(() => {
     if (messages.length > 0) {
       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -129,7 +136,7 @@ export default function Game({ roomId }: { roomId: string }) {
       setGameOver(false);
       gameOverSoundedRef.current = false;
     });
-    socket.on("gameState", (p: { fen: string; turn: Color; history: any[]; timeControl?: string; players?: { white?: string; black?: string }; stakePotUsd?: number }) => {
+    socket.on("gameState", (p: { fen: string; turn: Color; history: Move[]; timeControl?: string; players?: { white?: string; black?: string }; stakePotUsd?: number }) => {
       console.debug("socket gameState", { turn: p.turn, histLen: (p.history || []).length });
       chessRef.current.load(p.fen);
       setFen(p.fen);
@@ -162,7 +169,7 @@ export default function Game({ roomId }: { roomId: string }) {
       if (typeof names.white === "string") setWhiteName(names.white);
       if (typeof names.black === "string") setBlackName(names.black);
     });
-    socket.on("moveMade", (p: { fen: string; san?: string; history?: any[]; from?: string; to?: string }) => {
+    socket.on("moveMade", (p: { fen: string; san?: string; history?: Move[]; from?: string; to?: string }) => {
       console.debug("socket moveMade", { san: p.san });
       try { chessRef.current.load(p.fen); } catch {}
       setFen(p.fen);
@@ -189,7 +196,7 @@ export default function Game({ roomId }: { roomId: string }) {
       if (color && p.from !== color) setStatus("Opponent offered a draw");
       else setStatus("Draw offer sent");
     });
-    socket.on("drawDeclined", (p: { by: Color }) => {
+    socket.on("drawDeclined", (_p: { by: Color }) => {
       setDrawOfferFrom(undefined);
       setDrawPending(false);
       setStatus("Draw offer declined");

@@ -24,16 +24,6 @@ export default function TournamentsTab() {
 
   const supabase = getSupabase();
 
-  useEffect(() => {
-    fetchTournaments();
-  }, []);
-
-  useEffect(() => {
-    if (viewParticipantsId) {
-      fetchParticipants(viewParticipantsId);
-    }
-  }, [viewParticipantsId]);
-
   const fetchTournaments = async () => {
     try {
       setLoading(true);
@@ -74,6 +64,18 @@ export default function TournamentsTab() {
       setParticipantsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchTournaments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (viewParticipantsId) {
+      fetchParticipants(viewParticipantsId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewParticipantsId]);
 
   const handleCreateTournament = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -287,7 +289,6 @@ export default function TournamentsTab() {
                       <tr key={p.id}>
                         <td className="p-4 text-white font-medium">{p.lichess_username}</td>
                         <td className="p-4 text-neutral-400">
-                           {/* @ts-expect-error profiles join */}
                           {p.profiles?.username || 'Unknown'}
                         </td>
                         <td className="p-4 text-right text-neutral-500 text-sm">
