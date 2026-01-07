@@ -291,6 +291,9 @@ export default function TournamentsTab() {
                         <td className="p-4 text-neutral-400">
                           {p.profiles?.username || 'Unknown'}
                         </td>
+                        <td className="p-4 text-neutral-400">
+                          {p.profiles?.email || '-'}
+                        </td>
                         <td className="p-4 text-right text-neutral-500 text-sm">
                           {new Date(p.joined_at).toLocaleDateString()}
                         </td>

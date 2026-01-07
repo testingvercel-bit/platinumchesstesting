@@ -1,5 +1,6 @@
 -- 1. Add is_admin column to profiles table
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS email TEXT;
 
 -- 2. Create tournaments table
 CREATE TABLE IF NOT EXISTS tournaments (
