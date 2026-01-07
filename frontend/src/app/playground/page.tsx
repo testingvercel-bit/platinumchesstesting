@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabaseClient";
 import Header from "@/components/Header";
+import TournamentBanner from "@/components/TournamentBanner";
 import { io } from "socket.io-client";
 export default function PlaygroundPage() {
   const router = useRouter();
@@ -34,9 +35,11 @@ export default function PlaygroundPage() {
       const uid = data.session?.user?.id;
       if (!uid) { setUserId(""); return; }
       setUserId(uid);
-      const { data: prof } = await s.from("profiles").select("full_name,username,phone_number,date_of_birth,balance_usd").eq("id", uid).maybeSingle();
+      const { data: prof } = await s.from("profiles").select("full_name,username,phone_number,date_of_birth,balance_usd,is_admin").eq("id", uid).maybeSingle();
       if (!prof || !prof.full_name || !prof.username || !prof.phone_number || !prof.date_of_birth) {
         router.push("/complete-profile");
+      } else if (prof.is_admin) {
+        router.push("/admin");
       } else {
         setUsername(prof.username);
         setBalanceUsd(Number((prof as any)?.balance_usd || 0));
@@ -110,6 +113,7 @@ export default function PlaygroundPage() {
         onLogin={() => router.push("/auth/sign-in")}
         onSignup={() => router.push("/auth/sign-up")}
       />
+      <TournamentBanner />
       <div className="relative px-4 md:px-0 py-0 w-[min(90vw,70vh)] md:w-[min(70vw,60vh)] mx-auto">
         <div className="mt-4 w-full rounded-xl border border-neutral-800 bg-neutral-900/60 backdrop-blur-md shadow-lg shadow-black/30">
           <div className="px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
