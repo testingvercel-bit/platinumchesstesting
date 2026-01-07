@@ -110,11 +110,11 @@ export default function TournamentsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-white tracking-tight">Tournaments</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Tournaments</h2>
         <button 
           onClick={() => setIsCreateModalOpen(true)}
-          className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-900/20"
+          className="w-full sm:w-auto px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-900/20"
         >
           + Create Tournament
         </button>

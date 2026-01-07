@@ -18,6 +18,11 @@ export default function AdminDashboard() {
     checkAdmin();
   }, []);
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/auth/sign-in');
+  };
+
   const checkAdmin = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -66,30 +71,44 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/" className="text-neutral-400 hover:text-white transition-colors">
-              ← Back to App
+              <span className="hidden sm:inline">← Back to App</span>
+              <span className="sm:hidden">←</span>
             </Link>
-            <h1 className="text-xl font-bold tracking-tight">Admin Dashboard</h1>
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight">Admin</h1>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex bg-neutral-900/50 p-1 rounded-xl">
+              <button
+                onClick={() => setActiveTab('users')}
+                className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
+                  activeTab === 'users' 
+                    ? 'bg-emerald-500/10 text-emerald-400 shadow-sm' 
+                    : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                Users
+              </button>
+              <button
+                onClick={() => setActiveTab('tournaments')}
+                className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
+                  activeTab === 'tournaments' 
+                    ? 'bg-emerald-500/10 text-emerald-400 shadow-sm' 
+                    : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                Tournaments
+              </button>
+            </div>
             <button
-              onClick={() => setActiveTab('users')}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                activeTab === 'users' 
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
-                  : 'text-neutral-400 hover:text-white hover:bg-white/5'
-              }`}
+              onClick={handleLogout}
+              className="p-2 text-neutral-400 hover:text-red-400 transition-colors bg-neutral-900/50 rounded-xl hover:bg-neutral-800"
+              title="Logout"
             >
-              User Management
-            </button>
-            <button
-              onClick={() => setActiveTab('tournaments')}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                activeTab === 'tournaments' 
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
-                  : 'text-neutral-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              Tournaments
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
             </button>
           </div>
         </div>
