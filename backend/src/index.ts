@@ -211,11 +211,18 @@ app.post("/payments/payfast/notify", async (req, res) => {
     const pfPaymentId = String(pfData.pf_payment_id || "").trim();
     if (!userId || !amountUsd) return;
     if (!supabaseAdmin) return;
-    const { data: prof, error: eSel } = await supabaseAdmin.from("profiles").select("balance_usd").eq("id", userId).maybeSingle();
+    const { data: prof, error: eSel } = await supabaseAdmin.from("profiles").select("balance_usd, verification_status").eq("id", userId).maybeSingle();
     if (eSel) { console.error("PF ITN select error", eSel.message); return; }
     const prev = Number((prof as any)?.balance_usd || 0);
     const next = +(prev + amountUsd).toFixed(2);
-    const { error: eUpd } = await supabaseAdmin.from("profiles").update({ balance_usd: next }).eq("id", userId);
+    
+    const updates: any = { balance_usd: next };
+    const currentStatus = (prof as any)?.verification_status || "unverified";
+    if (amountUsd >= 5 && currentStatus === "unverified") {
+      updates.verification_status = "pending";
+    }
+
+    const { error: eUpd } = await supabaseAdmin.from("profiles").update(updates).eq("id", userId);
     if (eUpd) { console.error("PF ITN update error", eUpd.message); return; }
     try {
       await supabaseAdmin.from("transactions").insert({ type: "deposit", pf_payment_id: pfPaymentId, amount_usd: amountUsd, user_id: userId, status: "complete" });
@@ -364,11 +371,28 @@ async function recordGame(room: Room, winnerUserId: string | null, loserUserId: 
   } catch {}
 }
 
+async function getVerificationStatus(userId: string): Promise<string> {
+  if (!supabaseAdmin) return "unverified";
+  const { data, error } = await supabaseAdmin.from("profiles").select("verification_status").eq("id", userId).maybeSingle();
+  if (error) return "unverified";
+  return (data as any)?.verification_status || "unverified";
+}
+
 io.on("connection", socket => {
   console.log("socket connected", socket.id);
   socket.on("queueForTime", async (payload: { time: string; playerId: string; userId: string; stakeUsd: number }) => {
     const { time, playerId, userId, stakeUsd } = payload;
     if (!time || !playerId) return;
+
+    // Check verification status
+    if (userId) {
+      const status = await getVerificationStatus(userId);
+      if (status !== "verified") {
+        io.to(socket.id).emit("queueRejected", { reason: status === "pending" ? "Verification pending" : "Verification required" });
+        return;
+      }
+    }
+
     const key = `${time}|${Math.max(0, Math.floor(stakeUsd * 100))}`;
     const queue = waitingQueues.get(key) || [];
     if (!queue.find(q => q.playerId === playerId)) {

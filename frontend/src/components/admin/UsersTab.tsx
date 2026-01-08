@@ -24,7 +24,7 @@ export default function UsersTab() {
       setLoading(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, verification_status')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -33,6 +33,23 @@ export default function UsersTab() {
       console.error('Error fetching users:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVerifyUser = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ verification_status: 'verified' })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      setMessage({ type: 'success', text: 'User verified successfully' });
+      fetchUsers();
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to verify user' });
+      console.error(error);
     }
   };
 
@@ -107,6 +124,7 @@ export default function UsersTab() {
               <tr>
                 <th className="p-6 font-medium">User</th>
                 <th className="p-6 font-medium">Balance</th>
+                <th className="p-6 font-medium">Status</th>
                 <th className="p-6 font-medium">Role</th>
                 <th className="p-6 font-medium text-right">Actions</th>
               </tr>
@@ -114,11 +132,11 @@ export default function UsersTab() {
             <tbody className="divide-y divide-white/5">
               {loading ? (
                 <tr>
-                  <td colSpan={4} className="p-6 text-center text-neutral-500">Loading users...</td>
+                  <td colSpan={5} className="p-6 text-center text-neutral-500">Loading users...</td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="p-6 text-center text-neutral-500">No users found</td>
+                  <td colSpan={5} className="p-6 text-center text-neutral-500">No users found</td>
                 </tr>
               ) : (
                 users.map((user) => (
@@ -140,6 +158,21 @@ export default function UsersTab() {
                       </span>
                     </td>
                     <td className="p-6">
+                      {user.verification_status === 'verified' ? (
+                        <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-medium border border-emerald-500/20">
+                          Verified
+                        </span>
+                      ) : user.verification_status === 'pending' ? (
+                        <span className="px-3 py-1 bg-yellow-500/10 text-yellow-400 rounded-full text-xs font-medium border border-yellow-500/20">
+                          Pending
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 bg-neutral-800 text-neutral-400 rounded-full text-xs font-medium">
+                          Unverified
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-6">
                       {user.is_admin ? (
                         <span className="px-3 py-1 bg-purple-500/10 text-purple-400 rounded-full text-xs font-medium border border-purple-500/20">
                           Admin
@@ -152,6 +185,14 @@ export default function UsersTab() {
                     </td>
                     <td className="p-6 text-right">
                       <div className="flex justify-end gap-2">
+                        {user.verification_status !== 'verified' && (
+                          <button
+                            onClick={() => handleVerifyUser(user.id)}
+                            className="px-3 py-1.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg text-sm transition-colors"
+                          >
+                            Verify
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             setSelectedUser(user);

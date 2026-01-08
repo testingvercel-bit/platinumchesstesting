@@ -11,6 +11,7 @@ type Profile = {
   username: string;
   phone_number: string;
   date_of_birth: string;
+  verification_status: string;
 };
 
 export default function ProfilePage() {
@@ -24,7 +25,7 @@ export default function ProfilePage() {
       const user = data.session?.user;
       if (!user) { router.push("/auth/sign-in"); return; }
       setEmail(user.email || "");
-      const { data: prof } = await s.from("profiles").select("id, full_name, username, phone_number, date_of_birth").eq("id", user.id).maybeSingle();
+      const { data: prof } = await s.from("profiles").select("id, full_name, username, phone_number, date_of_birth, verification_status").eq("id", user.id).maybeSingle();
       if (!prof) { router.push("/complete-profile"); return; }
       setProfile(prof as Profile);
     });
@@ -42,16 +43,49 @@ export default function ProfilePage() {
             </div>
 
             {profile ? (
-              <div className="mt-8 rounded-2xl border border-neutral-800 bg-neutral-900/60">
-                <div className="divide-y divide-neutral-800">
-                  <Row label="Full Name" value={profile.full_name} />
-                  <Row label="Username" value={profile.username} />
-                  <Row label="Email" value={email} />
-                  <Row label="Phone" value={profile.phone_number} />
-                  <Row label="Date of Birth" value={profile.date_of_birth} />
-                </div>
-                <div className="p-4 md:p-6">
-                  <button className="w-full px-5 py-3 rounded-2xl bg-neutral-100 hover:bg-white text-neutral-900 font-semibold tracking-tight shadow-sm" onClick={() => router.push("/complete-profile")}>Edit Profile</button>
+              <div className="mt-8">
+                {profile.verification_status !== 'verified' && (
+                  <div className={`mb-6 p-4 rounded-xl border ${
+                    profile.verification_status === 'pending' 
+                      ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-200' 
+                      : 'bg-neutral-800 border-neutral-700 text-neutral-300'
+                  }`}>
+                    <div className="flex items-start gap-3">
+                      <div className="text-xl">ℹ️</div>
+                      <div>
+                        <h4 className="font-semibold mb-1">
+                          {profile.verification_status === 'pending' ? 'Verification Pending' : 'Account Unverified'}
+                        </h4>
+                        <p className="text-sm opacity-90">
+                          {profile.verification_status === 'pending' 
+                            ? 'Your account is currently under review. You cannot play games until an admin verifies your account.'
+                            : 'To verify your account, please make a deposit of at least $5. You cannot play games until verification is complete.'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60">
+                  <div className="divide-y divide-neutral-800">
+                    <Row label="Full Name" value={profile.full_name} />
+                    <Row label="Username" value={profile.username} />
+                    <Row label="Email" value={email} />
+                    <Row label="Phone" value={profile.phone_number} />
+                    <Row label="Date of Birth" value={profile.date_of_birth} />
+                    <Row 
+                      label="Verification" 
+                      value={profile.verification_status === 'verified' ? 'Verified' : profile.verification_status === 'pending' ? 'Pending' : 'Unverified'} 
+                      valueClass={
+                        profile.verification_status === 'verified' ? 'text-emerald-400' : 
+                        profile.verification_status === 'pending' ? 'text-yellow-400' : 'text-neutral-500'
+                      }
+                    />
+                  </div>
+                  <div className="p-4 md:p-6">
+                    <button className="w-full px-5 py-3 rounded-2xl bg-neutral-100 hover:bg-white text-neutral-900 font-semibold tracking-tight shadow-sm" onClick={() => router.push("/complete-profile")}>Edit Profile</button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -64,11 +98,11 @@ export default function ProfilePage() {
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
   return (
     <div className="flex items-center justify-between px-4 md:px-6 py-3">
       <div className="text-neutral-400">{label}</div>
-      <div className="text-neutral-100 font-medium">{value}</div>
+      <div className={`font-medium ${valueClass || 'text-neutral-100'}`}>{value}</div>
     </div>
   );
 }

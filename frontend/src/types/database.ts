@@ -6,6 +6,7 @@ export interface Profile {
   avatar_url?: string;
   balance_usd: number;
   is_admin?: boolean;
+  verification_status?: 'unverified' | 'pending' | 'verified';
 }
 
 export interface Tournament {
