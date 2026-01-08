@@ -14,6 +14,8 @@ export default function RoomPage() {
   const [verificationStatus, setVerificationStatus] = useState<'unverified' | 'pending' | 'verified'>('unverified');
   const [isAuth, setIsAuth] = useState<boolean>(false);
 
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+
   useEffect(() => {
     const s = getSupabase();
     s.auth.getSession().then(async ({ data }) => {
@@ -23,7 +25,12 @@ export default function RoomPage() {
       const { data: prof } = await s.from("profiles").select("username,balance_usd,verification_status").eq("id", uid).maybeSingle();
       setUsername(((prof as any)?.username as string) || "Account");
       setBalanceUsd(Number((prof as any)?.balance_usd || 0));
-      setVerificationStatus((prof as any)?.verification_status || 'unverified');
+      const status = (prof as any)?.verification_status || 'unverified';
+      setVerificationStatus(status);
+      
+      if (status !== 'verified') {
+        setShowVerificationModal(true);
+      }
     });
   }, []);
 
@@ -41,9 +48,25 @@ export default function RoomPage() {
         onSignup={() => router.push("/auth/sign-up")}
         verificationStatus={verificationStatus}
       />
-      <div className="mt-4">
+      <div className={`mt-4 ${showVerificationModal ? 'blur-sm pointer-events-none' : ''}`}>
         <Game roomId={roomId} />
       </div>
+
+      {showVerificationModal && (
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] max-w-sm rounded-2xl border border-neutral-800 bg-neutral-950 shadow-2xl">
+            <div className="px-5 py-4">
+              <div className="text-lg font-semibold text-neutral-50">Verification Required</div>
+              <div className="mt-1 text-sm text-neutral-400">You need to verify your account to play games.</div>
+              <div className="mt-4 flex gap-2">
+                <button className="flex-1 px-4 py-2 rounded-md bg-neutral-800 text-neutral-200 hover:bg-neutral-700" onClick={() => router.push("/playground")}>Leave</button>
+                <button className="flex-1 px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700" onClick={() => router.push("/profile")}>Go to Profile</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

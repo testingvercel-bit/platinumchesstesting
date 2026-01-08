@@ -46,7 +46,14 @@ export default function UsersTab() {
         body: JSON.stringify({ userId }),
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error('Failed to parse response JSON:', text);
+        throw new Error('Invalid server response');
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to verify user');

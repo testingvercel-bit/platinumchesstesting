@@ -77,6 +77,11 @@ export default function TournamentDetailsPage() {
       return;
     }
 
+    if (profile.verification_status !== 'verified') {
+      setError('Verification required. Please verify your account in your profile to join tournaments.');
+      return;
+    }
+
     if (profile.balance_usd < 5) {
       setError('Insufficient funds. You need at least $5.00 in your account to join.');
       return;
