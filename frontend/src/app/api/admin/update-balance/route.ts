@@ -1,43 +1,40 @@
 import { createClient } from '@supabase/supabase-js';
-import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
+    const text = await req.text();
+    if (!text) {
+      return Response.json({ error: 'Empty body' }, { status: 400 });
+    }
+
     let body;
     try {
-      body = await req.json();
+      body = JSON.parse(text);
     } catch (e: any) {
       console.error('Error parsing request body:', e);
-      return NextResponse.json({ error: 'Invalid JSON', details: e.message }, { status: 400 });
+      return Response.json({ error: 'Invalid JSON', details: e.message }, { status: 400 });
     }
     
     const { userId, amountChange } = body;
     if (!userId || typeof amountChange !== 'number' || !isFinite(amountChange)) {
       console.error('Update Balance Error: Invalid inputs', { userId, amountChange });
-      return NextResponse.json({ error: 'userId and numeric amountChange are required' }, { status: 400 });
+      return Response.json({ error: 'userId and numeric amountChange are required' }, { status: 400 });
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    console.log('Update Balance Config:', { 
-      hasUrl: !!supabaseUrl, 
-      hasServiceKey: !!supabaseServiceKey,
-      keyLength: supabaseServiceKey?.length 
-    });
-
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('Update Balance Error: Missing server configuration');
-      return NextResponse.json({ 
-        error: 'Server configuration error: Missing Supabase keys',
-        debug: { hasUrl: !!supabaseUrl, hasServiceKey: !!supabaseServiceKey }
+      return Response.json({ 
+        error: 'Server configuration error: Missing Supabase keys' 
       }, { status: 500 });
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
+      auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
     });
 
     console.log('Fetching profile for balance update:', userId);
@@ -49,7 +46,7 @@ export async function POST(req: Request) {
 
     if (fetchError) {
       console.error('Update Balance Error (fetch):', fetchError);
-      return NextResponse.json({ error: fetchError.message }, { status: 500 });
+      return Response.json({ error: fetchError.message }, { status: 500 });
     }
     const current = Number(profile?.balance_usd ?? 0);
     const next = Math.round((current + amountChange) * 100) / 100;
@@ -62,12 +59,12 @@ export async function POST(req: Request) {
 
     if (updateError) {
       console.error('Update Balance Error (update):', updateError);
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
+      return Response.json({ error: updateError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, balance_usd: next });
+    return Response.json({ success: true, balance_usd: next });
   } catch (err: any) {
     console.error('Update Balance Unhandled Exception:', err);
-    return NextResponse.json({ error: err?.message || 'Internal server error' }, { status: 500 });
+    return Response.json({ error: err?.message || 'Internal server error' }, { status: 500 });
   }
 }
