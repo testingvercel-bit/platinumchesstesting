@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
@@ -25,7 +26,10 @@ export async function POST(req: Request) {
 
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('Delete User Error: Missing server configuration');
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+      return NextResponse.json({ 
+        error: 'Server configuration error: Missing Supabase keys',
+        debug: { hasUrl: !!supabaseUrl, hasServiceKey: !!supabaseServiceKey }
+      }, { status: 500 });
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
