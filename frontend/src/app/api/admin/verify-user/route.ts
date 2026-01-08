@@ -5,17 +5,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
-    const text = await req.text();
-    if (!text) {
-      return NextResponse.json({ error: 'Empty request body' }, { status: 400 });
-    }
-
-    let body;
-    try {
-      body = JSON.parse(text);
-    } catch (e) {
-      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
-    }
+    const body = await req.json();
 
     const { userId } = body;
     

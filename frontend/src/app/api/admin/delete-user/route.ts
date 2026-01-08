@@ -5,18 +5,8 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
-    const text = await req.text();
-    if (!text) {
-      return NextResponse.json({ error: 'Empty request body' }, { status: 400 });
-    }
-
-    let body: { userId?: string };
-    try {
-      body = JSON.parse(text);
-    } catch {
-      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
-    }
-
+    const body = await req.json();
+    
     const { userId } = body;
     if (!userId) {
       console.error('Delete User Error: Missing userId');
