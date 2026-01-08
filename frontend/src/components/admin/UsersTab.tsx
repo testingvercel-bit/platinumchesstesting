@@ -38,12 +38,19 @@ export default function UsersTab() {
 
   const handleVerifyUser = async (userId: string) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ verification_status: 'verified' })
-        .eq('id', userId);
+      const response = await fetch('/api/admin/verify-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId }),
+      });
 
-      if (error) throw error;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to verify user');
+      }
 
       setMessage({ type: 'success', text: 'User verified successfully' });
       fetchUsers();

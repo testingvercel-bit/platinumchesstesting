@@ -13,6 +13,7 @@ interface HeaderProps {
   isAuthenticated?: boolean;
   onLogin?: () => void;
   onSignup?: () => void;
+  verificationStatus?: 'unverified' | 'pending' | 'verified';
 }
 
 export default function Header({
@@ -25,6 +26,7 @@ export default function Header({
   isAuthenticated,
   onLogin,
   onSignup,
+  verificationStatus,
 }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -71,7 +73,12 @@ export default function Header({
 
               <div className="relative hidden sm:block">
                 <button className="inline-flex items-center gap-2 rounded-full border border-neutral-700 bg-neutral-900 px-2.5 py-1.5 text-sm font-medium tracking-tight text-neutral-100" onClick={() => setIsMenuOpen((prev) => !prev)}>
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-800 text-xs font-semibold tracking-tight">{initial}</span>
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-800 text-xs font-semibold tracking-tight relative">
+                    {initial}
+                    {verificationStatus === 'verified' && (
+                      <span className="absolute -bottom-1 -right-1 block h-3 w-3 rounded-full bg-emerald-500 border-2 border-neutral-900" title="Verified"></span>
+                    )}
+                  </span>
                   <span className="hidden sm:inline">{username || "Account"}</span>
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="m6 9 6 6 6-6" />

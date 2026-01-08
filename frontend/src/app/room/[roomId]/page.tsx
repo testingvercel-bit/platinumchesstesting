@@ -11,6 +11,7 @@ export default function RoomPage() {
   const roomId = params.roomId;
   const [username, setUsername] = useState<string>("");
   const [balanceUsd, setBalanceUsd] = useState<number>(0);
+  const [verificationStatus, setVerificationStatus] = useState<'unverified' | 'pending' | 'verified'>('unverified');
   const [isAuth, setIsAuth] = useState<boolean>(false);
 
   useEffect(() => {
@@ -19,9 +20,10 @@ export default function RoomPage() {
       const uid = data.session?.user?.id;
       if (!uid) { setUsername("Account"); setIsAuth(false); return; }
       setIsAuth(true);
-      const { data: prof } = await s.from("profiles").select("username,balance_usd").eq("id", uid).maybeSingle();
+      const { data: prof } = await s.from("profiles").select("username,balance_usd,verification_status").eq("id", uid).maybeSingle();
       setUsername(((prof as any)?.username as string) || "Account");
       setBalanceUsd(Number((prof as any)?.balance_usd || 0));
+      setVerificationStatus((prof as any)?.verification_status || 'unverified');
     });
   }, []);
 
@@ -37,6 +39,7 @@ export default function RoomPage() {
         isAuthenticated={isAuth}
         onLogin={() => router.push("/auth/sign-in")}
         onSignup={() => router.push("/auth/sign-up")}
+        verificationStatus={verificationStatus}
       />
       <div className="mt-4">
         <Game roomId={roomId} />

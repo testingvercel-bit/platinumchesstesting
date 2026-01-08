@@ -10,6 +10,7 @@ export default function PlaygroundPage() {
   const router = useRouter();
   const [username, setUsername] = useState<string>("");
   const [balanceUsd, setBalanceUsd] = useState<number>(0);
+  const [verificationStatus, setVerificationStatus] = useState<'unverified' | 'pending' | 'verified'>('unverified');
   const [userId, setUserId] = useState<string>("");
   const [status, setStatus] = useState<string>("Select a time control to start");
   const [stakeUsd, setStakeUsd] = useState<number>(() => {
@@ -21,6 +22,7 @@ export default function PlaygroundPage() {
     return 1;
   });
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
   const playerId = useMemo(() => {
     const key = "platinumchess-player-id";
     const existing = typeof window !== "undefined" ? window.localStorage.getItem(key) : null;
@@ -35,7 +37,7 @@ export default function PlaygroundPage() {
       const uid = data.session?.user?.id;
       if (!uid) { setUserId(""); return; }
       setUserId(uid);
-      const { data: prof } = await s.from("profiles").select("full_name,username,phone_number,date_of_birth,balance_usd,is_admin").eq("id", uid).maybeSingle();
+      const { data: prof } = await s.from("profiles").select("full_name,username,phone_number,date_of_birth,balance_usd,is_admin,verification_status").eq("id", uid).maybeSingle();
       if (!prof || !prof.full_name || !prof.username || !prof.phone_number || !prof.date_of_birth) {
         router.push("/complete-profile");
       } else if (prof.is_admin) {
@@ -43,6 +45,7 @@ export default function PlaygroundPage() {
       } else {
         setUsername(prof.username);
         setBalanceUsd(Number((prof as any)?.balance_usd || 0));
+        setVerificationStatus((prof as any)?.verification_status || 'unverified');
       }
     });
   }, [router]);
@@ -62,6 +65,11 @@ export default function PlaygroundPage() {
     if (!userId) {
       setStatus("Please log in to play");
       setShowLoginModal(true);
+      return;
+    }
+    if (verificationStatus !== 'verified') {
+      setStatus("Verification required to play");
+      setShowVerificationModal(true);
       return;
     }
     if (stakeUsd > balanceUsd) {
@@ -209,6 +217,21 @@ export default function PlaygroundPage() {
               <div className="mt-4 flex gap-2">
                 <button className="flex-1 px-4 py-2 rounded-md bg-neutral-800 text-neutral-200 hover:bg-neutral-700" onClick={() => setShowLoginModal(false)}>Close</button>
                 <button className="flex-1 px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700" onClick={() => router.push("/auth/sign-in")}>Log in</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {showVerificationModal && (
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowVerificationModal(false)} />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] max-w-sm rounded-2xl border border-neutral-800 bg-neutral-950 shadow-2xl">
+            <div className="px-5 py-4">
+              <div className="text-lg font-semibold text-neutral-50">Verification Required</div>
+              <div className="mt-1 text-sm text-neutral-400">You need to verify your account to play games.</div>
+              <div className="mt-4 flex gap-2">
+                <button className="flex-1 px-4 py-2 rounded-md bg-neutral-800 text-neutral-200 hover:bg-neutral-700" onClick={() => setShowVerificationModal(false)}>Close</button>
+                <button className="flex-1 px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700" onClick={() => router.push("/profile")}>Go to Profile</button>
               </div>
             </div>
           </div>
