@@ -4,32 +4,33 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+export async function GET() {
+  return NextResponse.json({ status: 'delete-user route is active' });
+}
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
     
     const { userId } = body;
     if (!userId) {
-      console.error('Delete User Error: Missing userId');
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
-    // Log config status (don't log the full key for security, just presence)
-    console.log('Delete User Config:', { 
-      hasUrl: !!supabaseUrl, 
-      hasServiceKey: !!supabaseServiceKey,
-      keyLength: supabaseServiceKey?.length 
-    });
-
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('Delete User Error: Missing server configuration');
       return NextResponse.json({ 
         error: 'Server configuration error: Missing Supabase keys',
         debug: { hasUrl: !!supabaseUrl, hasServiceKey: !!supabaseServiceKey }
-      }, { status: 500 });
+      }, { status: 503 }); // 503 instead of 500 to differentiate
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
