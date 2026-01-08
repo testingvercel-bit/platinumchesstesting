@@ -1,17 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     let body;
     try {
-      const text = await req.text();
-      if (!text) {
-        return NextResponse.json({ error: 'Empty request body' }, { status: 400 });
-      }
-      body = JSON.parse(text);
+      body = await req.json();
     } catch (e: any) {
       console.error('Error parsing request body:', e);
       return NextResponse.json({ error: 'Invalid JSON', details: e.message }, { status: 400 });
