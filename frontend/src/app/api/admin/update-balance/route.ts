@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,19 +23,15 @@ export async function POST(req: Request) {
       return Response.json({ error: 'userId and numeric amountChange are required' }, { status: 400 });
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseServiceKey) {
+    let supabaseAdmin;
+    try {
+      supabaseAdmin = getSupabaseAdmin();
+    } catch (e: any) {
       console.error('Update Balance Error: Missing server configuration');
       return Response.json({ 
         error: 'Server configuration error: Missing Supabase keys' 
       }, { status: 500 });
     }
-
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
-    });
 
     console.log('Fetching profile for balance update:', userId);
     const { data: profile, error: fetchError } = await supabaseAdmin

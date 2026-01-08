@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,23 +23,15 @@ export async function POST(req: Request) {
       return Response.json({ error: 'userId is required' }, { status: 400 });
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    
-    if (!supabaseUrl || !supabaseServiceKey) {
+    let supabaseAdmin;
+    try {
+      supabaseAdmin = getSupabaseAdmin();
+    } catch (e: any) {
       console.error('Delete User Error: Missing server configuration');
       return Response.json({ 
         error: 'Server configuration error: Missing Supabase keys' 
       }, { status: 503 });
     }
-
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { 
-        autoRefreshToken: false, 
-        persistSession: false,
-        detectSessionInUrl: false // Ensure no browser behavior
-      },
-    });
 
     console.log('Deleting tournament participants for user:', userId);
     const { error: tpError } = await supabaseAdmin
