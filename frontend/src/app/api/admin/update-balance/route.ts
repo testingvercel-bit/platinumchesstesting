@@ -5,7 +5,17 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    let body;
+    try {
+      const text = await req.text();
+      if (!text) {
+        return NextResponse.json({ error: 'Empty request body' }, { status: 400 });
+      }
+      body = JSON.parse(text);
+    } catch (e: any) {
+      console.error('Error parsing request body:', e);
+      return NextResponse.json({ error: 'Invalid JSON', details: e.message }, { status: 400 });
+    }
     
     const { userId, amountChange } = body;
     if (!userId || typeof amountChange !== 'number' || !isFinite(amountChange)) {

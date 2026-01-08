@@ -11,10 +11,14 @@ export async function POST(req: Request) {
   try {
     let body;
     try {
-      body = await req.json();
-    } catch (e) {
+      const text = await req.text();
+      if (!text) {
+        return NextResponse.json({ error: 'Empty request body' }, { status: 400 });
+      }
+      body = JSON.parse(text);
+    } catch (e: any) {
       console.error('JSON Parse Error:', e);
-      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid JSON body', details: e.message }, { status: 400 });
     }
     
     const { userId } = body;
