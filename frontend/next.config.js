@@ -1,9 +1,16 @@
 const path = require('path');
+
+const isDev = process.env.NODE_ENV !== 'production';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: __dirname,
   async rewrites() {
+    // In development, we proxy to the separate backend server.
+    // In production, the backend serves the frontend, so no proxy is needed.
+    if (!isDev) return [];
+    
     return [
       {
         source: '/socket.io/:path*',
