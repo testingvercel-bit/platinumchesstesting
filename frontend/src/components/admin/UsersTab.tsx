@@ -69,13 +69,15 @@ export default function UsersTab() {
 
   const handleUpdateBalance = async (userId: string, currentBalance: number, amountChange: number) => {
     try {
-      const newBalance = currentBalance + amountChange;
-      const { error } = await supabase
-        .from('profiles')
-        .update({ balance_usd: newBalance })
-        .eq('id', userId);
-
-      if (error) throw error;
+      const response = await fetch('/api/admin/update-balance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, amountChange }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to update balance');
+      }
 
       setMessage({ type: 'success', text: 'Balance updated successfully' });
       fetchUsers();
@@ -92,18 +94,15 @@ export default function UsersTab() {
     if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
 
     try {
-      // Delete from auth.users needs admin API or backend function usually. 
-      // For now, we will try to delete from profiles if RLS allows, 
-      // but typically deleting the user requires calling an admin endpoint.
-      // Assuming for this prototype we just delete the profile or "ban" by setting a flag if we had one.
-      // Since we don't have a backend admin API set up in this context, we'll delete the profile row.
-      
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
-
-      if (error) throw error;
+      const response = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to delete user');
+      }
       
       setMessage({ type: 'success', text: 'User profile deleted' });
       fetchUsers();

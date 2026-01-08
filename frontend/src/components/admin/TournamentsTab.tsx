@@ -44,20 +44,37 @@ export default function TournamentsTab() {
   const fetchParticipants = async (tournamentId: string) => {
     try {
       setParticipantsLoading(true);
-      // We need to fetch participants and ideally join with profiles to get usernames if we wanted site usernames
-      // But for now we display the lichess username stored in the participants table
-      // Let's also fetch profile data to show site username
-      const { data, error } = await supabase
+      const { data: participantsRows, error: participantsError } = await supabase
         .from('tournament_participants')
-        .select(`
-          *,
-          profiles:user_id (username, full_name)
-        `)
+        .select('*')
         .eq('tournament_id', tournamentId)
         .order('joined_at', { ascending: false });
 
-      if (error) throw error;
-      setParticipants(data as unknown as TournamentParticipant[]);
+      if (participantsError) throw participantsError;
+
+      const ids = (participantsRows || []).map((p) => p.user_id).filter(Boolean);
+      let profilesById: Record<string, { username: string | null; full_name: string | null; email: string | null }> = {};
+
+      if (ids.length > 0) {
+        const { data: profilesRows, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, username, full_name, email')
+          .in('id', ids);
+
+        if (profilesError) throw profilesError;
+
+        profilesById = (profilesRows || []).reduce((acc, row) => {
+          acc[row.id] = { username: row.username, full_name: row.full_name, email: row.email };
+          return acc;
+        }, {} as Record<string, { username: string | null; full_name: string | null; email: string | null }>);
+      }
+
+      const merged = (participantsRows || []).map((p) => ({
+        ...p,
+        profiles: profilesById[p.user_id] ? { id: p.user_id, ...profilesById[p.user_id], balance_usd: 0 } : undefined,
+      })) as unknown as TournamentParticipant[];
+
+      setParticipants(merged);
     } catch (error) {
       console.error('Error fetching participants:', error);
     } finally {
