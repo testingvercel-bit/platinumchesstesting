@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
     let body;
     try {
