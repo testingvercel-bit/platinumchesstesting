@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { resend } from '@/lib/resend';
-import { WelcomeEmail } from '@/components/emails/Templates';
+import { welcomeEmailHtml } from '@/lib/emailHtml';
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       from: process.env.RESEND_FROM_EMAIL || 'PlatinumChess <onboarding@resend.dev>',
       to: user.email,
       subject: 'Welcome to PlatinumChess!',
-      react: <WelcomeEmail username={username} />,
+      html: welcomeEmailHtml(username),
     });
 
     if (emailError) {

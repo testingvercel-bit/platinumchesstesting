@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { resend } from '@/lib/resend';
-import { ConfirmationEmail } from '@/components/emails/Templates';
+import { confirmationEmailHtml } from '@/lib/emailHtml';
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       from: process.env.RESEND_FROM_EMAIL || 'PlatinumChess <onboarding@resend.dev>',
       to: email,
       subject: 'Confirm your PlatinumChess account',
-      react: <ConfirmationEmail confirmationLink={confirmationLink} />,
+      html: confirmationEmailHtml(confirmationLink),
     });
 
     if (emailError) {
