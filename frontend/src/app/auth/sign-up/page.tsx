@@ -1,7 +1,6 @@
 "use client";
 import Bg from "@/components/Bg";
 import Logo from "@/components/Logo";
-import { getSupabase } from "@/lib/supabaseClient";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -22,14 +21,25 @@ export default function SignUpPage() {
       return;
     }
     setLoading(true);
-    const { error: err } = await getSupabase().auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: `${window.location.origin}/complete-profile` },
-    });
-    setLoading(false);
-    if (err) setError(err.message);
-    else setSent(true);
+
+    try {
+      const res = await fetch('/api/auth/sign-up', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const json = await res.json();
+      
+      setLoading(false);
+      if (!res.ok) {
+        setError(json.error || "Signup failed");
+      } else {
+        setSent(true);
+      }
+    } catch (err) {
+      setLoading(false);
+      setError("An unexpected error occurred");
+    }
   }
 
   return (
