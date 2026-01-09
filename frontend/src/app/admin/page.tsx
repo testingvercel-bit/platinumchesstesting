@@ -8,11 +8,11 @@ import TournamentsTab from '@/components/admin/TournamentsTab';
 import WithdrawalsTab from '@/components/admin/WithdrawalsTab';
 import Link from 'next/link';
 
-export default function AdminDashboard() {
+export default function AdminPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'users' | 'tournaments' | 'withdrawals'>('users');
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const router = useRouter();
   const supabase = getSupabase();
 
   useEffect(() => {

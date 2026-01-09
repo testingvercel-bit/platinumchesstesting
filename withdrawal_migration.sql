@@ -77,7 +77,7 @@ BEGIN
 
   -- Create withdrawal record
   INSERT INTO withdrawals (user_id, amount, method, account_details, status)
-  VALUES (v_user_id, p_amount, p_method, p_account_details)
+  VALUES (v_user_id, p_amount, p_method, p_account_details, 'pending')
   RETURNING id INTO v_withdrawal_id;
 
   RETURN jsonb_build_object('success', true, 'withdrawal_id', v_withdrawal_id);
