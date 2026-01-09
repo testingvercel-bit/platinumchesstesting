@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation';
 import { getSupabase } from '@/lib/supabaseClient';
 import UsersTab from '@/components/admin/UsersTab';
 import TournamentsTab from '@/components/admin/TournamentsTab';
+import WithdrawalsTab from '@/components/admin/WithdrawalsTab';
 import Link from 'next/link';
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'users' | 'tournaments'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'tournaments' | 'withdrawals'>('users');
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
