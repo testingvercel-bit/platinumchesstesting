@@ -71,7 +71,7 @@ export default function TournamentsTab() {
 
       const merged = (participantsRows || []).map((p) => ({
         ...p,
-        profiles: profilesById[p.user_id] ? { id: p.user_id, ...profilesById[p.user_id], balance_usd: 0 } : undefined,
+        profiles: profilesById[p.user_id] ? { id: p.user_id, ...profilesById[p.user_id] } : undefined,
       })) as unknown as TournamentParticipant[];
 
       setParticipants(merged);
@@ -298,6 +298,7 @@ export default function TournamentsTab() {
                     <tr>
                       <th className="p-4 font-medium">Lichess Username</th>
                       <th className="p-4 font-medium">Site User</th>
+                      <th className="p-4 font-medium">Email</th>
                       <th className="p-4 font-medium text-right">Joined At</th>
                     </tr>
                   </thead>
