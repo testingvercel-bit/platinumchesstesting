@@ -34,7 +34,7 @@ export default function SignInPage() {
     const { error: err } = await s.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (err) setError(err.message);
-    else router.push("/playground");
+    else router.push("/");
   }
 
   return (

@@ -94,6 +94,7 @@ export default function DepositPage() {
         onLogout={async () => { await getSupabase().auth.signOut(); router.push("/auth/sign-in"); }}
         onDeposit={() => {}}
         onWithdraw={() => router.push("/profile")}
+        isAuthenticated={!!userId}
       />
 
       <div className="px-4 md:px-0 w-[min(92vw,800px)] mx-auto">

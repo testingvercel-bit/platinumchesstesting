@@ -11,7 +11,7 @@ export default function DepositSuccessPage() {
           <div className="text-2xl font-semibold tracking-tight text-neutral-50">Deposit Successful</div>
           <div className="mt-2 text-neutral-400">Your payment was received. Balance will reflect shortly.</div>
           <div className="mt-6">
-            <button onClick={() => router.push("/playground")} className="px-6 py-3 rounded-2xl bg-neutral-100 hover:bg-white text-neutral-900 font-semibold tracking-tight">Return to Play</button>
+            <button onClick={() => router.push("/")} className="px-6 py-3 rounded-2xl bg-neutral-100 hover:bg-white text-neutral-900 font-semibold tracking-tight">Return to Play</button>
           </div>
         </div>
       </div>
