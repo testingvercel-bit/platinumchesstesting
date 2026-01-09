@@ -93,7 +93,7 @@ export default function DepositPage() {
         onProfile={() => router.push("/profile")}
         onLogout={async () => { await getSupabase().auth.signOut(); router.push("/auth/sign-in"); }}
         onDeposit={() => {}}
-        onWithdraw={() => router.push("/profile")}
+        onWithdraw={() => router.push("/withdrawal")}
         isAuthenticated={!!userId}
       />
 

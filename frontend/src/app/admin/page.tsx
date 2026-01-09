@@ -99,6 +99,16 @@ export default function AdminDashboard() {
               >
                 Tournaments
               </button>
+              <button
+                onClick={() => setActiveTab('withdrawals')}
+                className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
+                  activeTab === 'withdrawals' 
+                    ? 'bg-emerald-500/10 text-emerald-400 shadow-sm' 
+                    : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                Withdrawals
+              </button>
             </div>
             <button
               onClick={handleLogout}
@@ -116,7 +126,9 @@ export default function AdminDashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'users' ? <UsersTab /> : <TournamentsTab />}
+        {activeTab === 'users' && <UsersTab />}
+        {activeTab === 'tournaments' && <TournamentsTab />}
+        {activeTab === 'withdrawals' && <WithdrawalsTab />}
       </main>
     </div>
   );
