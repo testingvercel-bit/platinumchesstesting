@@ -6,7 +6,8 @@ import { getSupabase } from "@/lib/supabaseClient";
 import Header from "@/components/Header";
 import TournamentBanner from "@/components/TournamentBanner";
 import { io } from "socket.io-client";
-export default function PlaygroundPage() {
+
+export default function Playground() {
   const router = useRouter();
   const [username, setUsername] = useState<string>("");
   const [balanceUsd, setBalanceUsd] = useState<number>(0);
