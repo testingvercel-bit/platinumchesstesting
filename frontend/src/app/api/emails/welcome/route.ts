@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     // Send the welcome email
     const { error: emailError } = await resend.emails.send({
-      from: 'PlatinumChess <onboarding@resend.dev>', // User should update this domain
+      from: process.env.RESEND_FROM_EMAIL || 'PlatinumChess <onboarding@resend.dev>',
       to: user.email,
       subject: 'Welcome to PlatinumChess!',
       react: WelcomeEmail({ username }) as React.ReactElement,

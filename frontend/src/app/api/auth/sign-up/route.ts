@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Send the confirmation email via Resend
     const { error: emailError } = await resend.emails.send({
-      from: 'PlatinumChess <onboarding@resend.dev>', // User should update this domain
+      from: process.env.RESEND_FROM_EMAIL || 'PlatinumChess <onboarding@resend.dev>',
       to: email,
       subject: 'Confirm your PlatinumChess account',
       react: ConfirmationEmail({ confirmationLink }) as React.ReactElement,
