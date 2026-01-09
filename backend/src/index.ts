@@ -56,8 +56,7 @@ function pfEncode(val: string) {
 
 function buildParamString(params: Record<string, string | number>) {
   const parts: string[] = [];
-  const keys = Object.keys(params).sort();
-  for (const key of keys) {
+  for (const key of Object.keys(params)) {
     if (key === "signature") continue;
     const raw = params[key];
     const str = String(raw ?? "");
@@ -154,6 +153,14 @@ app.post("/payments/deposit/form", ...bodyParser, async (req, res) => {
     const returnUrl = `${origin}/payments/payfast/return`;
     const cancelUrl = `${origin}/payments/payfast/cancel`;
     const notifyUrl = `${origin}/payments/payfast/notify`;
+    
+    console.log("Generating deposit form:", {
+        userId,
+        amountUsd,
+        amountZar,
+        notifyUrl,
+        processUrl
+    });
 
     const fields: Record<string, string | number> = {
       merchant_id: merchantId,
@@ -188,56 +195,97 @@ app.get("/fx/usd-zar", async (_req, res) => {
 });
 
 app.post("/payments/payfast/notify", ...bodyParser, async (req, res) => {
+  console.log("PayFast ITN received:", req.body);
   try {
-    console.log("PayFast ITN received:", JSON.stringify(req.body));
     res.status(200).end();
     const pfData: Record<string, any> = { ...req.body };
     Object.keys(pfData).forEach(k => { if (typeof pfData[k] === "string") pfData[k] = pfData[k].replace(/\\/g, ""); });
     const passphrase = process.env.PAYFAST_PASSPHRASE || undefined;
     const paramString = buildParamString(pfData);
-    const validSig = (pfData.signature || "").toLowerCase() === md5Signature(paramString, passphrase);
+    const calculatedSig = md5Signature(paramString, passphrase);
+    const validSig = (pfData.signature || "").toLowerCase() === calculatedSig;
+    
+    console.log("PayFast Signature Check:", {
+        received: pfData.signature,
+        calculated: calculatedSig,
+        valid: validSig,
+        passphraseConfigured: !!passphrase
+    });
+
     let proceed = validSig;
     if (!proceed) {
-      console.log("PayFast local signature validation failed. Trying API...");
+      console.warn("Signature invalid, attempting server validation check...");
       try {
         const url = (process.env.PAYFAST_PROCESS_URL || "https://sandbox.payfast.co.za/eng/process").includes("sandbox")
           ? "https://sandbox.payfast.co.za/eng/query/validate"
           : "https://www.payfast.co.za/eng/query/validate";
+        console.log("Validating against:", url);
         const resp = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: paramString
         });
         const text = await resp.text();
+        console.log("Validation response:", text);
         if ((text || "").trim().toUpperCase() === "VALID") proceed = true;
-        else console.log("PayFast API validation failed:", text);
-      } catch (err) { console.error("PayFast validation error:", err); }
+      } catch (err) {
+        console.error("Server validation failed:", err);
+      }
     }
-    if (!proceed) { console.log("PayFast ITN rejected: Invalid signature"); return; }
-    if (String(pfData.payment_status) !== "COMPLETE") { console.log("PayFast ITN ignored: Status not COMPLETE"); return; }
+    if (!proceed) {
+        console.error("PayFast ITN validation failed completely");
+        return;
+    }
+    console.log("Payment Status:", pfData.payment_status);
+    if (String(pfData.payment_status) !== "COMPLETE") {
+        console.warn("Payment not COMPLETE, ignoring");
+        return;
+    }
     const userId = String(pfData.custom_str1 || "").trim();
     const amountUsd = Number(pfData.custom_str2 || 0);
     const pfPaymentId = String(pfData.pf_payment_id || "").trim();
-    if (!userId || !amountUsd) { console.log("PayFast ITN ignored: Missing userId or amount"); return; }
-    if (!supabaseAdmin) { console.error("PayFast ITN error: Supabase admin not initialized"); return; }
+    
+    console.log("Processing Deposit:", { userId, amountUsd, pfPaymentId });
+
+    if (!userId || !amountUsd) {
+        console.error("Missing userId or amountUsd in custom_str fields");
+        return;
+    }
+    if (!supabaseAdmin) {
+        console.error("Supabase Admin client not initialized (check env vars)");
+        return;
+    }
     const { data: prof, error: eSel } = await supabaseAdmin.from("profiles").select("balance_usd, verification_status").eq("id", userId).maybeSingle();
     if (eSel) { console.error("PF ITN select error", eSel.message); return; }
+    if (!prof) { console.error("User profile not found for id:", userId); return; }
+
     const prev = Number((prof as any)?.balance_usd || 0);
     const next = +(prev + amountUsd).toFixed(2);
+    
+    console.log("Updating balance:", { prev, next, userId });
     
     const updates: any = { balance_usd: next };
     const currentStatus = (prof as any)?.verification_status || "unverified";
     if (amountUsd >= 5 && currentStatus === "unverified") {
       updates.verification_status = "pending";
+      console.log("Updating verification status to pending");
     }
 
     const { error: eUpd } = await supabaseAdmin.from("profiles").update(updates).eq("id", userId);
     if (eUpd) { console.error("PF ITN update error", eUpd.message); return; }
-    console.log(`Deposit processed: User ${userId} credited $${amountUsd} (New Balance: $${next})`);
+    
+    console.log("Balance updated successfully");
+
     try {
-      await supabaseAdmin.from("transactions").insert({ type: "deposit", pf_payment_id: pfPaymentId, amount_usd: amountUsd, user_id: userId, status: "complete" });
-    } catch {}
-  } catch (err) { console.error("PayFast ITN exception:", err); }
+      const { error: eTx } = await supabaseAdmin.from("transactions").insert({ type: "deposit", pf_payment_id: pfPaymentId, amount_usd: amountUsd, user_id: userId, status: "complete" });
+      if (eTx) console.error("Transaction insert error:", eTx.message);
+      else console.log("Transaction record inserted");
+    } catch (err) {
+        console.error("Transaction insert exception:", err);
+    }
+  } catch (err) {
+      console.error("PayFast ITN Exception:", err);
+  }
 });
 
 app.get("/payments/payfast/return", (_req, res) => {
@@ -761,12 +809,6 @@ async function start() {
   app.all("*", (req, res) => {
     handle(req, res);
   });
-
-  if (!supabaseAdmin) {
-    console.warn("WARNING: Supabase Admin client not initialized. Backend operations requiring admin access (deposits, game results) will fail.");
-  } else {
-    console.log("Supabase Admin client initialized.");
-  }
 
   httpServer.listen(PORT, () => { console.log("Server listening", PORT); });
 }
