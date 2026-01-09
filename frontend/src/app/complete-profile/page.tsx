@@ -41,7 +41,7 @@ export default function CompleteProfilePage() {
     const { error: err } = await getSupabase().from("profiles").upsert({ id: userId, full_name: fullName, username, phone_number: phone, date_of_birth: dob });
     setLoading(false);
     if (err) setError(err.message);
-    else router.push("/playground");
+    else router.push("/");
   }
 
   return (
