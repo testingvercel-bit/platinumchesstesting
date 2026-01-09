@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  trailingSlash: false,
   outputFileTracingRoot: __dirname,
   async rewrites() {
     // Proxy API requests to the backend

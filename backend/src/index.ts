@@ -149,7 +149,9 @@ app.post("/payments/deposit/form", ...bodyParser, async (req, res) => {
     const amountZar = await usdToZar(amountUsd);
     const mPaymentId = `${userId}-${uuidv4()}`;
 
-    const origin = process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SERVER_URL || process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get("host")}`;
+    const rawOrigin = process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SERVER_URL || process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get("host")}`;
+    const origin = (rawOrigin || "").replace(/\/$/, "");
+    
     const returnUrl = `${origin}/payments/payfast/return`;
     const cancelUrl = `${origin}/payments/payfast/cancel`;
     const notifyUrl = `${origin}/payments/payfast/notify`;
