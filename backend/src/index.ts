@@ -28,8 +28,13 @@ type Room = {
 
 const app = express();
 app.use(cors({ origin: "*" }));
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
+
+// Middleware for body parsing (applied only to specific routes)
+const bodyParser = [
+  express.urlencoded({ extended: false }),
+  express.json()
+];
+
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
@@ -126,7 +131,7 @@ app.get("/auth/email-for-username/:username", async (req, res) => {
   }
 });
 
-app.post("/payments/deposit/form", async (req, res) => {
+app.post("/payments/deposit/form", ...bodyParser, async (req, res) => {
   try {
     const merchantId = process.env.PAYFAST_MERCHANT_ID || "";
     const merchantKey = process.env.PAYFAST_MERCHANT_KEY || "";
@@ -181,7 +186,7 @@ app.get("/fx/usd-zar", async (_req, res) => {
   }
 });
 
-app.post("/payments/payfast/notify", async (req, res) => {
+app.post("/payments/payfast/notify", ...bodyParser, async (req, res) => {
   try {
     res.status(200).end();
     const pfData: Record<string, any> = { ...req.body };
