@@ -84,7 +84,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="p-4 md:p-6">
-                    <button className="w-full px-5 py-3 rounded-2xl bg-neutral-100 hover:bg-white text-neutral-900 font-semibold tracking-tight shadow-sm" onClick={() => router.push("/complete-profile")}>Edit Profile</button>
+                    <button disabled className="w-full px-5 py-3 rounded-2xl bg-neutral-800 text-neutral-500 font-semibold tracking-tight shadow-sm cursor-not-allowed opacity-50">Edit Profile</button>
                   </div>
                 </div>
               </div>
