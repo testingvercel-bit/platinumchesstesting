@@ -638,7 +638,8 @@ io.on("connection", socket => {
           io.to(roomId).emit("gameOver", { reason });
           const loserColor = room.chess.turn() === "w" ? "white" : "black";
           const winnerColor = loserColor === "white" ? "black" : "white";
-          await settleRoom(room, reason === "draw" ? null : winnerColor, reason);
+          const isDraw = ["draw", "stalemate", "threefold", "insufficient"].includes(reason);
+          await settleRoom(room, isDraw ? null : winnerColor, reason);
         }
       } catch (err: any) {
         console.error("makeMove error:illegal move", { err: String(err) });
