@@ -53,20 +53,20 @@ export default function TournamentsTab() {
       if (participantsError) throw participantsError;
 
       const ids = (participantsRows || []).map((p) => p.user_id).filter(Boolean);
-      let profilesById: Record<string, { username: string | null; full_name: string | null; email: string | null }> = {};
+      let profilesById: Record<string, { username: string | null; full_name: string | null }> = {};
 
       if (ids.length > 0) {
         const { data: profilesRows, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, username, full_name, email')
+          .select('id, username, full_name')
           .in('id', ids);
 
         if (profilesError) throw profilesError;
 
         profilesById = (profilesRows || []).reduce((acc, row) => {
-          acc[row.id] = { username: row.username, full_name: row.full_name, email: row.email };
+          acc[row.id] = { username: row.username, full_name: row.full_name };
           return acc;
-        }, {} as Record<string, { username: string | null; full_name: string | null; email: string | null }>);
+        }, {} as Record<string, { username: string | null; full_name: string | null }>);
       }
 
       const merged = (participantsRows || []).map((p) => ({
@@ -298,7 +298,6 @@ export default function TournamentsTab() {
                     <tr>
                       <th className="p-4 font-medium">Lichess Username</th>
                       <th className="p-4 font-medium">Site User</th>
-                      <th className="p-4 font-medium">Email</th>
                       <th className="p-4 font-medium text-right">Joined At</th>
                     </tr>
                   </thead>
@@ -308,9 +307,6 @@ export default function TournamentsTab() {
                         <td className="p-4 text-white font-medium">{p.lichess_username}</td>
                         <td className="p-4 text-neutral-400">
                           {p.profiles?.username || 'Unknown'}
-                        </td>
-                        <td className="p-4 text-neutral-400">
-                          {p.profiles?.email || '-'}
                         </td>
                         <td className="p-4 text-right text-neutral-500 text-sm">
                           {new Date(p.joined_at).toLocaleDateString()}
