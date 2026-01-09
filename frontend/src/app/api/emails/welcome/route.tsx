@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       from: process.env.RESEND_FROM_EMAIL || 'PlatinumChess <onboarding@resend.dev>',
       to: user.email,
       subject: 'Welcome to PlatinumChess!',
-      react: WelcomeEmail({ username }) as React.ReactElement,
+      react: <WelcomeEmail username={username} />,
     });
 
     if (emailError) {

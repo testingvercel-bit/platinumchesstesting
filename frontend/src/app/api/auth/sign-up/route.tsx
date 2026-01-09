@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       from: process.env.RESEND_FROM_EMAIL || 'PlatinumChess <onboarding@resend.dev>',
       to: email,
       subject: 'Confirm your PlatinumChess account',
-      react: ConfirmationEmail({ confirmationLink }) as React.ReactElement,
+      react: <ConfirmationEmail confirmationLink={confirmationLink} />,
     });
 
     if (emailError) {
