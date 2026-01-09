@@ -390,9 +390,9 @@ function isPlaceholderName(name: string | undefined, playerId: string | undefine
 
 function gameOverReason(chess: Chess) {
   if (chess.isCheckmate()) return "checkmate";
-  if (chess.isStalemate()) return "stalemate";
-  if (chess.isThreefoldRepetition()) return "threefold";
-  if (chess.isInsufficientMaterial()) return "insufficient";
+  if (chess.isStalemate()) return "draw";
+  if (chess.isThreefoldRepetition()) return "draw";
+  if (chess.isInsufficientMaterial()) return "draw";
   if (chess.isDraw()) return "draw";
   return "over";
 }
@@ -638,7 +638,7 @@ io.on("connection", socket => {
           io.to(roomId).emit("gameOver", { reason });
           const loserColor = room.chess.turn() === "w" ? "white" : "black";
           const winnerColor = loserColor === "white" ? "black" : "white";
-          const isDraw = ["draw", "stalemate", "threefold", "insufficient"].includes(reason);
+          const isDraw = reason === "draw";
           await settleRoom(room, isDraw ? null : winnerColor, reason);
         }
       } catch (err: any) {
