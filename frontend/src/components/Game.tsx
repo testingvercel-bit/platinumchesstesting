@@ -646,7 +646,7 @@ export default function Game({ roomId }: { roomId: string }) {
                   value={chatText} 
                   onChange={e => setChatText(e.target.value)} 
                   placeholder="Type a message..." 
-                  className="flex-1 px-3 py-2 bg-[#262421] text-gray-200 border border-[#3d3d37] focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-sm placeholder-gray-500"
+                  className="flex-1 px-3 py-2 bg-[#262421] text-gray-200 border border-[#3d3d37] focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-base md:text-sm placeholder-gray-500"
                 />
                 <button 
                   type="submit" 

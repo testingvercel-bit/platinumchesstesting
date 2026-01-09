@@ -145,7 +145,7 @@ export default function Playground() {
                   inputMode="decimal"
                   value={stakeUsd}
                   onChange={e => { const n = Number(e.target.value); if (isFinite(n) && n > 0) { setStakeUsd(n); if (typeof window !== "undefined") window.localStorage.setItem("platinumchess-stake-usd", String(n)); } }}
-                  className="w-full px-2 py-1.5 rounded-md bg-neutral-900 border border-neutral-800 text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-700"
+                  className="w-full px-2 py-1.5 rounded-md bg-neutral-900 border border-neutral-800 text-neutral-100 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-neutral-700"
                 />
               </div>
             </div>
