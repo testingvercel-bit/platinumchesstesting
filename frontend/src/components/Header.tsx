@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import Logo from "@/components/Logo";
 
 interface HeaderProps {
@@ -10,6 +11,7 @@ interface HeaderProps {
   onLogout: () => Promise<void> | void;
   onDeposit?: () => void;
   onWithdraw?: () => void;
+  withdrawHref?: string;
   isAuthenticated?: boolean;
   onLogin?: () => void;
   onSignup?: () => void;
@@ -23,6 +25,7 @@ export default function Header({
   onLogout,
   onDeposit,
   onWithdraw,
+  withdrawHref,
   isAuthenticated,
   onLogin,
   onSignup,
@@ -61,14 +64,24 @@ export default function Header({
                 </button>
               )}
 
-              {onWithdraw && (
-                <button className="hidden sm:inline-flex items-center gap-2 rounded-full border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 transition-colors px-3.5 py-1.5 text-sm font-medium tracking-tight text-neutral-100" onClick={onWithdraw}>
-                  <span>Withdraw</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 19V5" />
-                    <path d="m5 12 7-7 7 7" />
-                  </svg>
-                </button>
+              {(withdrawHref || onWithdraw) && (
+                withdrawHref ? (
+                  <Link href={withdrawHref} className="hidden sm:inline-flex items-center gap-2 rounded-full border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 transition-colors px-3.5 py-1.5 text-sm font-medium tracking-tight text-neutral-100">
+                    <span>Withdraw</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 19V5" />
+                      <path d="m5 12 7-7 7 7" />
+                    </svg>
+                  </Link>
+                ) : (
+                  <button className="hidden sm:inline-flex items-center gap-2 rounded-full border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 transition-colors px-3.5 py-1.5 text-sm font-medium tracking-tight text-neutral-100" onClick={onWithdraw}>
+                    <span>Withdraw</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 19V5" />
+                      <path d="m5 12 7-7 7 7" />
+                    </svg>
+                  </button>
+                )
               )}
 
               <div className="relative hidden sm:block">
@@ -134,14 +147,28 @@ export default function Header({
                 </svg>
               </button>
             )}
-            {onWithdraw && (
-              <button className="w-full inline-flex items-center justify-between rounded-md border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 transition-colors px-3.5 py-2 text-sm font-medium tracking-tight text-neutral-100 mb-2" onClick={() => { setIsMobileMenuOpen(false); onWithdraw(); }}>
-                <span>Withdraw</span>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 19V5" />
-                  <path d="m5 12 7-7 7 7" />
-                </svg>
-              </button>
+            {(withdrawHref || onWithdraw) && (
+              withdrawHref ? (
+                <Link 
+                  href={withdrawHref} 
+                  className="w-full inline-flex items-center justify-between rounded-md border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 transition-colors px-3.5 py-2 text-sm font-medium tracking-tight text-neutral-100 mb-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <span>Withdraw</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 19V5" />
+                    <path d="m5 12 7-7 7 7" />
+                  </svg>
+                </Link>
+              ) : (
+                <button className="w-full inline-flex items-center justify-between rounded-md border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 transition-colors px-3.5 py-2 text-sm font-medium tracking-tight text-neutral-100 mb-2" onClick={() => { setIsMobileMenuOpen(false); if (onWithdraw) onWithdraw(); }}>
+                  <span>Withdraw</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 19V5" />
+                    <path d="m5 12 7-7 7 7" />
+                  </svg>
+                </button>
+              )
             )}
             <button className="w-full inline-flex items-center justify-between rounded-md border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 transition-colors px-3.5 py-2 text-sm font-medium tracking-tight text-neutral-100 mb-2" onClick={() => { setIsMobileMenuOpen(false); onProfile(); }}>
               <span>Profile</span>

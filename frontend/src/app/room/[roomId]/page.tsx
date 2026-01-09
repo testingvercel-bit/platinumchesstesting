@@ -42,7 +42,7 @@ export default function RoomPage() {
         onProfile={() => router.push("/profile")}
         onLogout={async () => { await getSupabase().auth.signOut(); router.push("/auth/sign-in"); }}
         onDeposit={() => router.push("/deposit")}
-        onWithdraw={() => router.push("/withdrawal")}
+        withdrawHref="/withdrawal"
         isAuthenticated={isAuth}
         onLogin={() => router.push("/auth/sign-in")}
         onSignup={() => router.push("/auth/sign-up")}
