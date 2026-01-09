@@ -34,6 +34,7 @@ export function confirmationEmailHtml(confirmationLink: string) {
 
 export function welcomeEmailHtml(username: string) {
   const safeUsername = escapeHtml(username);
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
   return `<!doctype html>
 <html>
@@ -48,7 +49,7 @@ export function welcomeEmailHtml(username: string) {
         <h1 style="margin:0 0 12px;color:#ffffff;font-size:24px;line-height:1.2;">Welcome, ${safeUsername}!</h1>
         <p style="margin:0 0 10px;line-height:1.6;">Your profile has been successfully set up.</p>
         <p style="margin:0 0 20px;line-height:1.6;">You can now deposit funds and join tournaments to start earning.</p>
-        <a href="https://platinumchess.com/deposit" style="display:inline-block;background:#10b981;color:#ffffff;padding:12px 18px;border-radius:6px;text-decoration:none;font-weight:700;">Deposit Funds</a>
+        <a href="${baseUrl}/deposit" style="display:inline-block;background:#10b981;color:#ffffff;padding:12px 18px;border-radius:6px;text-decoration:none;font-weight:700;">Deposit Funds</a>
       </div>
     </div>
   </body>
