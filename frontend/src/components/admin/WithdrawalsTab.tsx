@@ -12,7 +12,6 @@ type Withdrawal = {
   created_at: string;
   profiles: {
     username: string;
-    email: string;
   };
 };
 
@@ -32,7 +31,7 @@ export default function WithdrawalsTab() {
     setLoading(true);
     let query = supabase
       .from('withdrawals')
-      .select('*, profiles(username, email)')
+      .select('*, profiles(username)')
       .order('created_at', { ascending: false });
 
     if (filter === 'pending') {
@@ -121,7 +120,7 @@ export default function WithdrawalsTab() {
                      {w.status}
                    </div>
                 </div>
-                <div className="text-white font-medium">{w.profiles?.username || 'Unknown User'} <span className="text-neutral-500 text-sm font-normal">({w.profiles?.email || 'No Email'})</span></div>
+                <div className="text-white font-medium">{w.profiles?.username || 'Unknown User'}</div>
                 <div className="text-sm text-neutral-400 mt-1">
                   Requested on {new Date(w.created_at).toLocaleString()} via {w.method}
                 </div>
