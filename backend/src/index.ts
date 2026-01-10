@@ -144,7 +144,7 @@ app.post("/payments/deposit/form", ...bodyParser, async (req, res) => {
     const username = String(req.body?.username || "").trim();
     if (!userId) { res.status(400).json({ error: "Missing userId" }); return; }
     if (!amountUsd || isNaN(amountUsd)) { res.status(400).json({ error: "Invalid amount" }); return; }
-    if (amountUsd < 5) { res.status(400).json({ error: "Minimum deposit is 5 USD" }); return; }
+    if (amountUsd < 1) { res.status(400).json({ error: "Minimum deposit is 1 USD" }); return; }
 
     const amountZar = await usdToZar(amountUsd);
     const mPaymentId = `${userId}-${uuidv4()}`;
@@ -268,7 +268,7 @@ app.post("/payments/payfast/notify", ...bodyParser, async (req, res) => {
     
     const updates: any = { balance_usd: next };
     const currentStatus = (prof as any)?.verification_status || "unverified";
-    if (amountUsd >= 5 && currentStatus === "unverified") {
+    if (amountUsd >= 1 && currentStatus === "unverified") {
       updates.verification_status = "pending";
       console.log("Updating verification status to pending");
     }
