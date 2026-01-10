@@ -62,6 +62,7 @@ export default function SignUpPage() {
                     <p className="text-neutral-100 font-medium mt-1">{maskEmail(email)}</p>
                     <p className="text-neutral-400 mt-3">Click the verification link to activate your account.</p>
                     <p className="text-neutral-400">The link will take you to complete your profile.</p>
+                    <p className="text-neutral-500 text-sm mt-2">Check your spam folder as well.</p>
                     <div className="mt-6 flex items-center justify-center gap-3">
                       <button type="button" className="px-5 py-2.5 rounded-2xl bg-neutral-100 hover:bg-white text-neutral-900 font-semibold tracking-tight" onClick={() => router.push("/auth/sign-in")}>Back to Sign In</button>
                       <button type="button" className="px-5 py-2.5 rounded-2xl border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-neutral-100" onClick={() => setSent(false)}>Change Email</button>
