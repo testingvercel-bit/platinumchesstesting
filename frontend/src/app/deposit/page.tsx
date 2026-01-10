@@ -119,7 +119,7 @@ export default function DepositPage() {
                     <input
                       inputMode="decimal"
                       className="w-full px-4 py-3 rounded-2xl bg-neutral-900 border border-neutral-800 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-700"
-                      placeholder="Enter amount (min $5)"
+                      placeholder="Enter amount (min $1)"
                       value={amountUsd}
                       onChange={e => setAmountUsd(e.target.value)}
                     />
