@@ -268,7 +268,7 @@ app.post("/payments/payfast/notify", ...bodyParser, async (req, res) => {
     
     const updates: any = { balance_usd: next };
     const currentStatus = (prof as any)?.verification_status || "unverified";
-    if (amountUsd >= 1 && currentStatus === "unverified") {
+    if (amountUsd >= 5 && currentStatus === "unverified") {
       updates.verification_status = "pending";
       console.log("Updating verification status to pending");
     }
