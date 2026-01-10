@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
-import { resend } from '@/lib/resend';
+import { resend, getSenderEmail } from '@/lib/resend';
 import { confirmationEmailHtml } from '@/lib/emailHtml';
 
 export async function POST(req: NextRequest) {
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Send the confirmation email via Resend
     const { error: emailError } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'PlatinumChess <onboarding@resend.dev>',
+      from: getSenderEmail(),
       to: email,
       subject: 'Confirm your PlatinumChess account',
       html: confirmationEmailHtml(confirmationLink),

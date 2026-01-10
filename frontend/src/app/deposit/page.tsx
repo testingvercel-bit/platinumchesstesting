@@ -53,7 +53,7 @@ export default function DepositPage() {
     setError(null);
     const amt = Number(amountUsd);
     if (!amt || isNaN(amt)) { setError("Enter a valid USD amount"); return; }
-    if (amt < 5) { setError("Minimum deposit is 5 USD"); return; }
+    if (amt < 1) { setError("Minimum deposit is 1 USD"); return; }
     setLoading(true);
     try {
       const origin = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000");
@@ -176,7 +176,7 @@ export default function DepositPage() {
                 ))}
               </div>
 
-              <div className="pt-4 text-xs text-neutral-500">Minimum deposit is $5. Payments are processed in ZAR via PayFast. Your USD balance updates after payment completes.</div>
+              <div className="pt-4 text-xs text-neutral-500">Minimum deposit is $1. Payments are processed in ZAR via PayFast. Your USD balance updates after payment completes.</div>
             </form>
           </div>
         </div>
