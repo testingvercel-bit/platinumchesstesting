@@ -125,6 +125,27 @@ export default function TournamentsTab() {
     }
   };
 
+  const handleDeleteTournament = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this tournament? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('tournaments')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setMessage({ type: 'success', text: 'Tournament deleted successfully' });
+      fetchTournaments();
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to delete tournament' });
+      console.error(error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -180,6 +201,12 @@ export default function TournamentsTab() {
                 >
                   Lichess Link
                 </a>
+                <button
+                  onClick={() => handleDeleteTournament(tournament.id)}
+                  className="flex-1 md:flex-none px-4 py-2 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500/20 hover:text-red-300 transition-colors text-sm"
+                >
+                  Delete
+                </button>
               </div>
             </div>
           ))
