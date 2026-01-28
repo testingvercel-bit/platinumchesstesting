@@ -14,10 +14,12 @@ ALTER TABLE withdrawals ENABLE ROW LEVEL SECURITY;
 
 -- Policies
 -- Users can view their own withdrawals
+DROP POLICY IF EXISTS "Users can view own withdrawals" ON withdrawals;
 CREATE POLICY "Users can view own withdrawals" ON withdrawals
   FOR SELECT USING (auth.uid() = user_id);
 
 -- Admins can view all withdrawals
+DROP POLICY IF EXISTS "Admins can view all withdrawals" ON withdrawals;
 CREATE POLICY "Admins can view all withdrawals" ON withdrawals
   FOR SELECT USING (
     EXISTS (
@@ -27,6 +29,7 @@ CREATE POLICY "Admins can view all withdrawals" ON withdrawals
   );
 
 -- Admins can update withdrawals (e.g. status)
+DROP POLICY IF EXISTS "Admins can update withdrawals" ON withdrawals;
 CREATE POLICY "Admins can update withdrawals" ON withdrawals
   FOR UPDATE USING (
     EXISTS (
