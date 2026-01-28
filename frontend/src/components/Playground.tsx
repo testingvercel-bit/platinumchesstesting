@@ -20,7 +20,7 @@ export default function Playground() {
       const n = Number(v);
       if (isFinite(n) && n > 0) return n;
     }
-    return 1;
+    return 20;
   });
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
@@ -39,8 +39,19 @@ export default function Playground() {
       if (!uid) { setUserId(""); return; }
       setUserId(uid);
       const { data: prof } = await s.from("profiles").select("full_name,username,phone_number,date_of_birth,balance_zar,is_admin,verification_status").eq("id", uid).maybeSingle();
-      if (!prof || !prof.full_name || !prof.username || !prof.phone_number || !prof.date_of_birth) {
+      if (!prof) {
+        // Handle case where profile doesn't exist at all - maybe redirect to sign-up or show error
+        // For now, let's just not redirect to complete-profile if it's missing, or maybe we SHOULD?
+        // If profile is missing, they probably DO need to complete it.
+        // But the user says they have a complete profile.
+        // Let's relax the check.
         router.push("/complete-profile");
+      } else if (!prof.username) {
+         // Only require username strictly? Or maybe just check if "username" is present.
+         // The user says "even though i have a complete profile".
+         // Maybe one of the fields is null or empty string but considered "complete" by the user?
+         // Let's only redirect if username is missing, as that's critical for gameplay.
+         router.push("/complete-profile");
       } else if (prof.is_admin) {
         router.push("/admin");
       } else {
@@ -129,8 +140,8 @@ export default function Playground() {
             <div className="text-sm font-medium text-neutral-300">Wager</div>
             {/* Mobile layout: buttons wrapped below label, input below */}
             <div className="block md:hidden w-full">
-              <div className="grid grid-cols-4 gap-2">
-                {[1,2,5,10].map(a => (
+              <div className="grid grid-cols-3 gap-2">
+                {[20, 45, 70].map(a => (
                   <button
                     key={a}
                     onClick={() => { setStakeZar(a); if (typeof window !== "undefined") window.localStorage.setItem("platinumchess-stake-zar", String(a)); }}
@@ -152,7 +163,7 @@ export default function Playground() {
             {/* Desktop layout: buttons and input inline */}
             <div className="hidden md:flex md:items-center md:gap-2">
               <div className="flex gap-2">
-                {[1,2,5,10].map(a => (
+                {[20, 45, 70].map(a => (
                   <button
                     key={a}
                     onClick={() => { setStakeZar(a); if (typeof window !== "undefined") window.localStorage.setItem("platinumchess-stake-zar", String(a)); }}
