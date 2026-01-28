@@ -179,7 +179,7 @@ export default function TournamentsTab() {
                 <div className="flex flex-wrap gap-4 text-sm text-neutral-400">
                   <span className="flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    Prize: <span className="text-emerald-400 font-mono">${tournament.prize_fund}</span>
+                    Prize: <span className="text-emerald-400 font-mono">R{tournament.prize_fund}</span>
                   </span>
                   <span>
                     Starts: {new Date(tournament.start_date).toLocaleDateString()} at {new Date(tournament.start_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
@@ -234,7 +234,7 @@ export default function TournamentsTab() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-neutral-400 mb-2">Prize Fund ($)</label>
+                  <label className="block text-sm text-neutral-400 mb-2">Prize Fund (ZAR)</label>
                   <input
                     required
                     type="number"

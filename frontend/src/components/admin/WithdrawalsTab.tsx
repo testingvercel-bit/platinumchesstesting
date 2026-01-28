@@ -112,7 +112,7 @@ export default function WithdrawalsTab() {
             <div key={w.id} className="bg-neutral-900/40 border border-neutral-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                   <div className="text-lg font-semibold text-emerald-400">${w.amount}</div>
+                   <div className="text-lg font-semibold text-emerald-400">R{w.amount}</div>
                    <div className={`px-2 py-0.5 rounded text-xs font-medium uppercase tracking-wide
                      ${w.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' : 
                        w.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400' : 

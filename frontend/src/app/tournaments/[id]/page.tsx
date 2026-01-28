@@ -82,8 +82,8 @@ export default function TournamentDetailsPage() {
       return;
     }
 
-    if (profile.balance_usd < 5) {
-      setError('Insufficient funds. You need at least $5.00 in your account to join.');
+    if (profile.balance_zar < 5) {
+      setError('Insufficient funds. You need at least R5.00 in your account to join.');
       return;
     }
 
@@ -172,7 +172,7 @@ export default function TournamentDetailsPage() {
                   </h1>
                   <div className="flex flex-wrap gap-4 text-neutral-300 mb-6">
                     <span className="bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full text-sm font-medium border border-emerald-500/20">
-                      Prize Fund: ${tournament.prize_fund}
+                      Prize Fund: R{tournament.prize_fund}
                     </span>
                     <span className="bg-neutral-800 text-neutral-300 px-3 py-1 rounded-full text-sm font-medium">
                       {new Date(tournament.start_date).toLocaleDateString()} at {new Date(tournament.start_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
@@ -225,7 +225,7 @@ export default function TournamentDetailsPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-emerald-500">✓</span>
-                    <span>Minimum $5.00 Balance</span>
+                    <span>Minimum R5.00 Balance</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-emerald-500">✓</span>

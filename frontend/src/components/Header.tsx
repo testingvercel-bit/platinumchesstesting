@@ -6,7 +6,7 @@ import Logo from "@/components/Logo";
 
 interface HeaderProps {
   username: string;
-  balanceUsd?: number;
+  balanceZar?: number;
   onProfile: () => void;
   onLogout: () => Promise<void> | void;
   onDeposit?: () => void;
@@ -20,7 +20,7 @@ interface HeaderProps {
 
 export default function Header({
   username,
-  balanceUsd,
+  balanceZar,
   onProfile,
   onLogout,
   onDeposit,
@@ -51,7 +51,7 @@ export default function Header({
             <>
               <div className="hidden sm:flex items-center gap-3 rounded-full border border-neutral-800 bg-neutral-900/70 px-3 py-1.5">
                 <span className="text-xs font-medium text-neutral-400">Balance</span>
-                <span className="text-sm font-semibold tracking-tight text-emerald-400">${typeof balanceUsd === "number" ? balanceUsd.toFixed(2) : "--"}</span>
+                <span className="text-sm font-semibold tracking-tight text-emerald-400">R{typeof balanceZar === "number" ? balanceZar.toFixed(2) : "--"}</span>
               </div>
 
               {onDeposit && (
@@ -136,7 +136,7 @@ export default function Header({
             </div>
             <div className="flex items-center gap-3 rounded-full border border-neutral-800 bg-neutral-900/70 px-3 py-1.5 mb-3">
               <span className="text-xs font-medium text-neutral-400">Balance</span>
-              <span className="text-sm font-semibold tracking-tight text-emerald-400">${typeof balanceUsd === "number" ? balanceUsd.toFixed(2) : "--"}</span>
+              <span className="text-sm font-semibold tracking-tight text-emerald-400">R{typeof balanceZar === "number" ? balanceZar.toFixed(2) : "--"}</span>
             </div>
             {onDeposit && (
               <button className="w-full inline-flex items-center justify-between rounded-md bg-emerald-500/90 hover:bg-emerald-400 transition-colors px-3.5 py-2 text-sm font-medium tracking-tight text-neutral-950 shadow-sm mb-2" onClick={() => { setIsMobileMenuOpen(false); onDeposit(); }}>

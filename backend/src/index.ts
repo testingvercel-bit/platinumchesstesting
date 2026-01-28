@@ -22,8 +22,8 @@ type Room = {
   timeControl?: string;
   over?: boolean;
   drawOffer?: Color;
-  stakeEachUsd?: number;
-  stakePotUsd?: number;
+  stakeEachZar?: number;
+  stakePotZar?: number;
 };
 
 const app = express();
@@ -71,43 +71,7 @@ function md5Signature(paramString: string, passphrase?: string) {
   return crypto.createHash("md5").update(withPass).digest("hex");
 }
 
-async function usdToZar(amountUsd: number): Promise<number> {
-  const rate = await getUsdZarRate();
-  return +(amountUsd * rate).toFixed(2);
-}
 
-let fxCache: { rate: number; ts: number } | null = null;
-const FX_TTL_MS = 5 * 60 * 1000;
-async function getUsdZarRate(): Promise<number> {
-  const fallbackRate = 20;
-  const now = Date.now();
-  if (fxCache && now - fxCache.ts < FX_TTL_MS) return fxCache.rate;
-
-  const candidates = [
-    process.env.FX_PROVIDER_URL,
-    "https://open.er-api.com/v6/latest/USD",
-    "https://api.exchangerate.host/latest?base=USD&symbols=ZAR"
-  ].filter(Boolean) as string[];
-
-  for (const url of candidates) {
-    try {
-      const resp = await fetch(url);
-      if (!resp.ok) continue;
-      const json: any = await resp.json();
-      let rate = Number(
-        json?.rates?.ZAR ?? // er-api, exchangerate.host
-        json?.result?.ZAR   // generic fallbacks
-      );
-      if (!isFinite(rate)) continue;
-      if (rate < 5 || rate > 50) continue; // sanity bounds
-      fxCache = { rate, ts: now };
-      return rate;
-    } catch {}
-  }
-
-  fxCache = { rate: fallbackRate, ts: now };
-  return fallbackRate;
-}
 
 app.get("/auth/email-for-username/:username", async (req, res) => {
   try {
@@ -139,14 +103,13 @@ app.post("/payments/deposit/form", ...bodyParser, async (req, res) => {
     const processUrl = process.env.PAYFAST_PROCESS_URL || "https://sandbox.payfast.co.za/eng/process";
     if (!merchantId || !merchantKey) { res.status(500).json({ error: "PayFast env not configured" }); return; }
 
-    const amountUsd = Number(req.body?.amountUsd);
+    const amount = Number(req.body?.amount);
     const userId = String(req.body?.userId || "").trim();
     const username = String(req.body?.username || "").trim();
     if (!userId) { res.status(400).json({ error: "Missing userId" }); return; }
-    if (!amountUsd || isNaN(amountUsd)) { res.status(400).json({ error: "Invalid amount" }); return; }
-    if (amountUsd < 1) { res.status(400).json({ error: "Minimum deposit is 1 USD" }); return; }
+    if (!amount || isNaN(amount)) { res.status(400).json({ error: "Invalid amount" }); return; }
+    if (amount < 5) { res.status(400).json({ error: "Minimum deposit is R5" }); return; }
 
-    const amountZar = await usdToZar(amountUsd);
     const mPaymentId = `${userId}-${uuidv4()}`;
 
     const rawOrigin = process.env.PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SERVER_URL || process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get("host")}`;
@@ -158,8 +121,7 @@ app.post("/payments/deposit/form", ...bodyParser, async (req, res) => {
     
     console.log("Generating deposit form:", {
         userId,
-        amountUsd,
-        amountZar,
+        amount,
         notifyUrl,
         processUrl
     });
@@ -171,11 +133,11 @@ app.post("/payments/deposit/form", ...bodyParser, async (req, res) => {
       cancel_url: cancelUrl,
       notify_url: notifyUrl,
       m_payment_id: mPaymentId,
-      amount: amountZar.toFixed(2),
+      amount: amount.toFixed(2),
       item_name: "Account Deposit",
       item_description: username ? `Deposit for ${username}` : "Account top-up",
       custom_str1: userId,
-      custom_str2: amountUsd.toFixed(2),
+      custom_str2: amount.toFixed(2),
     };
 
     const paramString = buildParamString(fields);
@@ -187,14 +149,7 @@ app.post("/payments/deposit/form", ...bodyParser, async (req, res) => {
   }
 });
 
-app.get("/fx/usd-zar", async (_req, res) => {
-  try {
-    const rate = await getUsdZarRate();
-    res.json({ base: "USD", quote: "ZAR", rate });
-  } catch (err: any) {
-    res.status(500).json({ error: String(err?.message || err) });
-  }
-});
+
 
 app.post("/payments/payfast/notify", ...bodyParser, async (req, res) => {
   console.log("PayFast ITN received:", req.body);
@@ -244,31 +199,31 @@ app.post("/payments/payfast/notify", ...bodyParser, async (req, res) => {
         return;
     }
     const userId = String(pfData.custom_str1 || "").trim();
-    const amountUsd = Number(pfData.custom_str2 || 0);
+    const amount = Number(pfData.custom_str2 || 0);
     const pfPaymentId = String(pfData.pf_payment_id || "").trim();
     
-    console.log("Processing Deposit:", { userId, amountUsd, pfPaymentId });
+    console.log("Processing Deposit:", { userId, amount, pfPaymentId });
 
-    if (!userId || !amountUsd) {
-        console.error("Missing userId or amountUsd in custom_str fields");
+    if (!userId || !amount) {
+        console.error("Missing userId or amount in custom_str fields");
         return;
     }
     if (!supabaseAdmin) {
         console.error("Supabase Admin client not initialized (check env vars)");
         return;
     }
-    const { data: prof, error: eSel } = await supabaseAdmin.from("profiles").select("balance_usd, verification_status").eq("id", userId).maybeSingle();
+    const { data: prof, error: eSel } = await supabaseAdmin.from("profiles").select("balance_zar, verification_status").eq("id", userId).maybeSingle();
     if (eSel) { console.error("PF ITN select error", eSel.message); return; }
     if (!prof) { console.error("User profile not found for id:", userId); return; }
 
-    const prev = Number((prof as any)?.balance_usd || 0);
-    const next = +(prev + amountUsd).toFixed(2);
+    const prev = Number((prof as any)?.balance_zar || 0);
+    const next = +(prev + amount).toFixed(2);
     
     console.log("Updating balance:", { prev, next, userId });
     
-    const updates: any = { balance_usd: next };
+    const updates: any = { balance_zar: next };
     const currentStatus = (prof as any)?.verification_status || "unverified";
-    if (amountUsd >= 5 && currentStatus === "unverified") {
+    if (amount >= 5 && currentStatus === "unverified") {
       updates.verification_status = "pending";
       console.log("Updating verification status to pending");
     }
@@ -279,7 +234,7 @@ app.post("/payments/payfast/notify", ...bodyParser, async (req, res) => {
     console.log("Balance updated successfully");
 
     try {
-      const { error: eTx } = await supabaseAdmin.from("transactions").insert({ type: "deposit", pf_payment_id: pfPaymentId, amount_usd: amountUsd, user_id: userId, status: "complete" });
+      const { error: eTx } = await supabaseAdmin.from("transactions").insert({ type: "deposit", pf_payment_id: pfPaymentId, amount_zar: amount, user_id: userId, status: "complete" });
       if (eTx) console.error("Transaction insert error:", eTx.message);
       else console.log("Transaction record inserted");
     } catch (err) {
@@ -310,7 +265,7 @@ const io = new Server(httpServer, {
 });
 
 const rooms = new Map<string, Room>();
-const waitingQueues = new Map<string, { playerId: string; socketId: string; userId: string; stakeUsd: number }[]>();
+const waitingQueues = new Map<string, { playerId: string; socketId: string; userId: string; stakeZar: number }[]>();
 
 async function setupSocketAdapter() {
   const url = process.env.REDIS_URL || "";
@@ -375,8 +330,8 @@ function gameStatePayload(room: Room) {
       black: room.players.black?.playerId,
     },
     timeControl: room.timeControl,
-    stakeEachUsd: room.stakeEachUsd,
-    stakePotUsd: room.stakePotUsd
+    stakeEachZar: room.stakeEachZar,
+    stakePotZar: room.stakePotZar
   };
 }
 
@@ -397,16 +352,16 @@ function gameOverReason(chess: Chess) {
   return "over";
 }
 
-async function getBalanceUsd(userId: string): Promise<number | null> {
+async function getBalanceZar(userId: string): Promise<number | null> {
   if (!supabaseAdmin) return null;
-  const { data, error } = await supabaseAdmin.from("profiles").select("balance_usd").eq("id", userId).maybeSingle();
+  const { data, error } = await supabaseAdmin.from("profiles").select("balance_zar").eq("id", userId).maybeSingle();
   if (error) return null;
-  return Number((data as any)?.balance_usd ?? 0);
+  return Number((data as any)?.balance_zar ?? 0);
 }
 
-async function setBalanceUsd(userId: string, next: number): Promise<boolean> {
+async function setBalanceZar(userId: string, next: number): Promise<boolean> {
   if (!supabaseAdmin) return false;
-  const { error } = await supabaseAdmin.from("profiles").update({ balance_usd: +(next.toFixed(2)) }).eq("id", userId);
+  const { error } = await supabaseAdmin.from("profiles").update({ balance_zar: +(next.toFixed(2)) }).eq("id", userId);
   return !error;
 }
 
@@ -423,8 +378,8 @@ async function recordGame(room: Room, winnerUserId: string | null, loserUserId: 
       black_id: room.players.black?.userId || null,
       winner_id: winnerUserId,
       loser_id: loserUserId,
-      stake_usd: room.stakeEachUsd || null,
-      pot_usd: room.stakePotUsd || null,
+      stake_zar: room.stakeEachZar || null,
+      pot_zar: room.stakePotZar || null,
       result,
     };
     await supabaseAdmin.from("games").insert(payload);
@@ -440,8 +395,8 @@ async function getVerificationStatus(userId: string): Promise<string> {
 
 io.on("connection", socket => {
   console.log("socket connected", socket.id);
-  socket.on("queueForTime", async (payload: { time: string; playerId: string; userId: string; stakeUsd: number }) => {
-    const { time, playerId, userId, stakeUsd } = payload;
+  socket.on("queueForTime", async (payload: { time: string; playerId: string; userId: string; stakeZar: number }) => {
+    const { time, playerId, userId, stakeZar } = payload;
     if (!time || !playerId) return;
 
     // Check verification status
@@ -453,27 +408,27 @@ io.on("connection", socket => {
       }
     }
 
-    const key = `${time}|${Math.max(0, Math.floor(stakeUsd * 100))}`;
+    const key = `${time}|${Math.max(0, Math.floor(stakeZar * 100))}`;
     const queue = waitingQueues.get(key) || [];
     if (!queue.find(q => q.playerId === playerId)) {
-      queue.push({ playerId, socketId: socket.id, userId, stakeUsd: Number(stakeUsd) || 0 });
+      queue.push({ playerId, socketId: socket.id, userId, stakeZar: Number(stakeZar) || 0 });
       waitingQueues.set(key, queue);
     }
-    console.log("queueForTime", { time, playerId, stakeUsd, queueLength: queue.length });
+    console.log("queueForTime", { time, playerId, stakeZar, queueLength: queue.length });
     if (queue.length >= 2) {
       const a = queue.shift()!;
       const b = queue.shift()!;
       waitingQueues.set(key, queue);
-      const stakeEach = Math.max(0, Math.floor((a.stakeUsd || 0) * 100) / 100);
+      const stakeEach = Math.max(0, Math.floor((a.stakeZar || 0) * 100) / 100);
       // Validate equal stake
-      if (stakeEach <= 0 || Math.abs(stakeEach - (b.stakeUsd || 0)) > 1e-9) {
+      if (stakeEach <= 0 || Math.abs(stakeEach - (b.stakeZar || 0)) > 1e-9) {
         io.to(a.socketId).emit("queueRejected", { reason: "Stake mismatch" });
         io.to(b.socketId).emit("queueRejected", { reason: "Stake mismatch" });
         return;
       }
       // Ensure balances and escrow
-      const balA = await getBalanceUsd(a.userId);
-      const balB = await getBalanceUsd(b.userId);
+      const balA = await getBalanceZar(a.userId);
+      const balB = await getBalanceZar(b.userId);
       if (balA == null || balB == null) {
         io.to(a.socketId).emit("queueRejected", { reason: "Balance unavailable" });
         io.to(b.socketId).emit("queueRejected", { reason: "Balance unavailable" });
@@ -483,26 +438,26 @@ io.on("connection", socket => {
       if ((balB as number) < stakeEach) { io.to(b.socketId).emit("queueRejected", { reason: "Insufficient funds" }); waitingQueues.set(key, [a, ...queue]); return; }
       const nextA = +(Math.max(0, (balA as number) - stakeEach).toFixed(2));
       const nextB = +(Math.max(0, (balB as number) - stakeEach).toFixed(2));
-      const okA = await setBalanceUsd(a.userId, nextA);
+      const okA = await setBalanceZar(a.userId, nextA);
       if (!okA) { io.to(a.socketId).emit("queueRejected", { reason: "Escrow failed" }); waitingQueues.set(key, [a, b, ...queue]); return; }
-      await insertTransaction({ type: "stake_debit", amount_usd: stakeEach, user_id: a.userId, room_id: undefined, status: "complete" });
-      const okB = await setBalanceUsd(b.userId, nextB);
+      await insertTransaction({ type: "stake_debit", amount_zar: stakeEach, user_id: a.userId, room_id: undefined, status: "complete" });
+      const okB = await setBalanceZar(b.userId, nextB);
       if (!okB) {
         // refund A
-        await setBalanceUsd(a.userId, balA as number);
-        await insertTransaction({ type: "stake_refund", amount_usd: stakeEach, user_id: a.userId, room_id: undefined, status: "complete" });
+        await setBalanceZar(a.userId, balA as number);
+        await insertTransaction({ type: "stake_refund", amount_zar: stakeEach, user_id: a.userId, room_id: undefined, status: "complete" });
         io.to(b.socketId).emit("queueRejected", { reason: "Escrow failed" });
         waitingQueues.set(key, [a, b, ...queue]);
         return;
       }
-      await insertTransaction({ type: "stake_debit", amount_usd: stakeEach, user_id: b.userId, room_id: undefined, status: "complete" });
+      await insertTransaction({ type: "stake_debit", amount_zar: stakeEach, user_id: b.userId, room_id: undefined, status: "complete" });
 
       const roomId = uuidv4();
       const room = getOrCreateRoom(roomId);
       room.timeControl = time;
       room.over = false;
-      room.stakeEachUsd = stakeEach;
-      room.stakePotUsd = +(stakeEach * 2).toFixed(2);
+      room.stakeEachZar = stakeEach;
+      room.stakePotZar = +(stakeEach * 2).toFixed(2);
       io.to(a.socketId).emit("paired", { roomId, time });
       io.to(b.socketId).emit("paired", { roomId, time });
     }
@@ -725,19 +680,19 @@ async function settleRoom(room: Room, winnerColor: Color | null, reason: string)
   try {
     const whiteUser = room.players.white?.userId || null;
     const blackUser = room.players.black?.userId || null;
-    const stakeEach = room.stakeEachUsd || 0;
-    const pot = room.stakePotUsd || 0;
+    const stakeEach = room.stakeEachZar || 0;
+    const pot = room.stakePotZar || 0;
     if (winnerColor === null) {
       // draw: refund each stake
       if (whiteUser && stakeEach > 0) {
-        const bw = await getBalanceUsd(whiteUser);
-        if (bw != null) await setBalanceUsd(whiteUser, +(bw + stakeEach));
-        await insertTransaction({ type: "stake_refund", amount_usd: stakeEach, user_id: whiteUser, room_id: room.id, status: "complete" });
+        const bw = await getBalanceZar(whiteUser);
+        if (bw != null) await setBalanceZar(whiteUser, +(bw + stakeEach));
+        await insertTransaction({ type: "stake_refund", amount_zar: stakeEach, user_id: whiteUser, room_id: room.id, status: "complete" });
       }
       if (blackUser && stakeEach > 0) {
-        const bb = await getBalanceUsd(blackUser);
-        if (bb != null) await setBalanceUsd(blackUser, +(bb + stakeEach));
-        await insertTransaction({ type: "stake_refund", amount_usd: stakeEach, user_id: blackUser, room_id: room.id, status: "complete" });
+        const bb = await getBalanceZar(blackUser);
+        if (bb != null) await setBalanceZar(blackUser, +(bb + stakeEach));
+        await insertTransaction({ type: "stake_refund", amount_zar: stakeEach, user_id: blackUser, room_id: room.id, status: "complete" });
       }
       await recordGame(room, null, null, reason);
       return;
@@ -745,9 +700,9 @@ async function settleRoom(room: Room, winnerColor: Color | null, reason: string)
     const winnerUser = winnerColor === "white" ? whiteUser : blackUser;
     const loserUser = winnerColor === "white" ? blackUser : whiteUser;
     if (winnerUser && pot > 0) {
-      const bw = await getBalanceUsd(winnerUser);
-      if (bw != null) await setBalanceUsd(winnerUser, +(bw + pot));
-      await insertTransaction({ type: "stake_payout", amount_usd: pot, user_id: winnerUser, room_id: room.id, status: "complete" });
+      const bw = await getBalanceZar(winnerUser);
+      if (bw != null) await setBalanceZar(winnerUser, +(bw + pot));
+      await insertTransaction({ type: "stake_payout", amount_zar: pot, user_id: winnerUser, room_id: room.id, status: "complete" });
     }
     await recordGame(room, winnerUser || null, loserUser || null, reason);
   } catch {}
@@ -761,7 +716,7 @@ app.get("/games/recent/:userId", async (req, res) => {
     if (!supabaseAdmin) { res.status(500).json({ error: "Supabase not configured" }); return; }
     const { data: games, error } = await supabaseAdmin
       .from("games")
-      .select("room_id, white_id, black_id, winner_id, loser_id, stake_usd, pot_usd, result, created_at")
+      .select("room_id, white_id, black_id, winner_id, loser_id, stake_zar, pot_zar, result, created_at")
       .or(`white_id.eq.${userId},black_id.eq.${userId}`)
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
@@ -778,16 +733,16 @@ app.get("/games/recent/:userId", async (req, res) => {
       const lose = g.loser_id && g.loser_id === userId;
       let delta = 0;
       if (g.result === "draw") delta = 0;
-      else if (win) delta = +(g.stake_usd * 2);
-      else if (lose) delta = -+(g.stake_usd);
+      else if (win) delta = +(g.stake_zar * 2);
+      else if (lose) delta = -+(g.stake_zar);
       return {
         roomId: g.room_id,
         opponentId,
         opponentName: usernames[opponentId] || (opponentId ? String(opponentId).slice(0, 8) : "Opponent"),
-        stakeUsd: g.stake_usd,
-        potUsd: g.pot_usd,
+        stakeZar: g.stake_zar,
+        potZar: g.pot_zar,
         result: g.result,
-        deltaUsd: delta,
+        deltaZar: delta,
         createdAt: g.created_at,
       };
     });

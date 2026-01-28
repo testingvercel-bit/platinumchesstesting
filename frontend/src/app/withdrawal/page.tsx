@@ -18,7 +18,7 @@ export default function WithdrawalPage() {
   const router = useRouter();
   const [username, setUsername] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
-  const [balanceUsd, setBalanceUsd] = useState<number>(0);
+  const [balanceZar, setBalanceZar] = useState<number>(0);
   
   // Form State
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -51,10 +51,10 @@ export default function WithdrawalPage() {
   }, [router]);
 
   async function fetchProfile(uid: string) {
-    const { data: prof } = await supabase.from("profiles").select("username,balance_usd").eq("id", uid).maybeSingle();
+    const { data: prof } = await supabase.from("profiles").select("username,balance_zar").eq("id", uid).maybeSingle();
     if (prof) {
       setUsername(prof.username || "Account");
-      setBalanceUsd(Number(prof.balance_usd || 0));
+      setBalanceZar(Number(prof.balance_zar || 0));
     }
   }
 
@@ -73,8 +73,8 @@ export default function WithdrawalPage() {
     if (step === 1) {
       const val = Number(amount);
       if (!val || isNaN(val) || val <= 0) { setError("Please enter a valid amount"); return; }
-      if (val > balanceUsd) { setError("Insufficient balance"); return; }
-      if (val < 10) { setError("Minimum withdrawal is $10"); return; } // Assuming $10 min
+      if (val > balanceZar) { setError("Insufficient balance"); return; }
+      if (val < 10) { setError("Minimum withdrawal is R10"); return; } // Assuming R10 min
       setStep(2);
     } else if (step === 2) {
       setStep(3);
@@ -124,7 +124,7 @@ export default function WithdrawalPage() {
     <Bg>
       <Header
         username={username}
-        balanceUsd={balanceUsd}
+        balanceZar={balanceZar}
         onProfile={() => router.push("/profile")}
         onLogout={async () => { await supabase.auth.signOut(); router.push("/auth/sign-in"); }}
         onDeposit={() => router.push("/deposit")}
@@ -147,7 +147,7 @@ export default function WithdrawalPage() {
             {step === 1 && (
               <div className="space-y-6">
                  <div>
-                  <label className="block text-sm font-medium text-neutral-300 mb-2">Amount (USD)</label>
+                  <label className="block text-sm font-medium text-neutral-300 mb-2">Amount (ZAR)</label>
                   <input
                     type="number"
                     className="w-full px-4 py-3 rounded-2xl bg-neutral-900 border border-neutral-800 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-700"
@@ -155,7 +155,7 @@ export default function WithdrawalPage() {
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                   />
-                  <p className="mt-2 text-sm text-neutral-500">Available Balance: ${balanceUsd.toFixed(2)}</p>
+                  <p className="mt-2 text-sm text-neutral-500">Available Balance: R{balanceZar.toFixed(2)}</p>
                 </div>
                 <button
                   onClick={handleNextStep}
@@ -238,7 +238,7 @@ export default function WithdrawalPage() {
               withdrawals.map((w) => (
                 <div key={w.id} className="p-4 rounded-2xl bg-neutral-900/40 border border-neutral-800 flex justify-between items-center">
                   <div>
-                    <div className="text-neutral-200 font-medium">${w.amount} via {w.method}</div>
+                    <div className="text-neutral-200 font-medium">R{w.amount} via {w.method}</div>
                     <div className="text-xs text-neutral-500">{new Date(w.created_at).toLocaleDateString()}</div>
                   </div>
                   <div>

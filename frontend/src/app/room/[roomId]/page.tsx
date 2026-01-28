@@ -10,7 +10,7 @@ export default function RoomPage() {
   const params = useParams<{ roomId: string }>();
   const roomId = params.roomId;
   const [username, setUsername] = useState<string>("");
-  const [balanceUsd, setBalanceUsd] = useState<number>(0);
+  const [balanceZar, setBalanceZar] = useState<number>(0);
   const [verificationStatus, setVerificationStatus] = useState<'unverified' | 'pending' | 'verified'>('unverified');
   const [isAuth, setIsAuth] = useState<boolean>(false);
 
@@ -22,9 +22,9 @@ export default function RoomPage() {
       const uid = data.session?.user?.id;
       if (!uid) { setUsername("Account"); setIsAuth(false); return; }
       setIsAuth(true);
-      const { data: prof } = await s.from("profiles").select("username,balance_usd,verification_status").eq("id", uid).maybeSingle();
+      const { data: prof } = await s.from("profiles").select("username,balance_zar,verification_status").eq("id", uid).maybeSingle();
       setUsername(((prof as any)?.username as string) || "Account");
-      setBalanceUsd(Number((prof as any)?.balance_usd || 0));
+      setBalanceZar(Number((prof as any)?.balance_zar || 0));
       const status = (prof as any)?.verification_status || 'unverified';
       setVerificationStatus(status);
       
@@ -38,7 +38,7 @@ export default function RoomPage() {
     <div>
       <Header
         username={username || "Account"}
-        balanceUsd={balanceUsd}
+        balanceZar={balanceZar}
         onProfile={() => router.push("/profile")}
         onLogout={async () => { await getSupabase().auth.signOut(); router.push("/auth/sign-in"); }}
         onDeposit={() => router.push("/deposit")}

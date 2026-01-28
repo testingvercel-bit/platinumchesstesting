@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     console.log('Fetching profile for balance update:', userId);
     const { data: profile, error: fetchError } = await supabaseAdmin
       .from('profiles')
-      .select('balance_usd')
+      .select('balance_zar')
       .eq('id', userId)
       .single();
 
@@ -44,13 +44,13 @@ export async function POST(req: Request) {
       console.error('Update Balance Error (fetch):', fetchError);
       return Response.json({ error: fetchError.message }, { status: 500 });
     }
-    const current = Number(profile?.balance_usd ?? 0);
+    const current = Number(profile?.balance_zar ?? 0);
     const next = Math.round((current + amountChange) * 100) / 100;
 
     console.log('Updating balance:', { userId, current, amountChange, next });
     const { error: updateError } = await supabaseAdmin
       .from('profiles')
-      .update({ balance_usd: next })
+      .update({ balance_zar: next })
       .eq('id', userId);
 
     if (updateError) {
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
       return Response.json({ error: updateError.message }, { status: 500 });
     }
 
-    return Response.json({ success: true, balance_usd: next });
+    return Response.json({ success: true, balance_zar: next });
   } catch (err: any) {
     console.error('Update Balance Unhandled Exception:', err);
     return Response.json({ error: err?.message || 'Internal server error' }, { status: 500 });

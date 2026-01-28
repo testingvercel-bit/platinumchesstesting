@@ -10,13 +10,13 @@ import { io } from "socket.io-client";
 export default function Playground() {
   const router = useRouter();
   const [username, setUsername] = useState<string>("");
-  const [balanceUsd, setBalanceUsd] = useState<number>(0);
+  const [balanceZar, setBalanceZar] = useState<number>(0);
   const [verificationStatus, setVerificationStatus] = useState<'unverified' | 'pending' | 'verified'>('unverified');
   const [userId, setUserId] = useState<string>("");
   const [status, setStatus] = useState<string>("Select a time control to start");
-  const [stakeUsd, setStakeUsd] = useState<number>(() => {
+  const [stakeZar, setStakeZar] = useState<number>(() => {
     if (typeof window !== "undefined") {
-      const v = window.localStorage.getItem("platinumchess-stake-usd");
+      const v = window.localStorage.getItem("platinumchess-stake-zar");
       const n = Number(v);
       if (isFinite(n) && n > 0) return n;
     }
@@ -38,14 +38,14 @@ export default function Playground() {
       const uid = data.session?.user?.id;
       if (!uid) { setUserId(""); return; }
       setUserId(uid);
-      const { data: prof } = await s.from("profiles").select("full_name,username,phone_number,date_of_birth,balance_usd,is_admin,verification_status").eq("id", uid).maybeSingle();
+      const { data: prof } = await s.from("profiles").select("full_name,username,phone_number,date_of_birth,balance_zar,is_admin,verification_status").eq("id", uid).maybeSingle();
       if (!prof || !prof.full_name || !prof.username || !prof.phone_number || !prof.date_of_birth) {
         router.push("/complete-profile");
       } else if (prof.is_admin) {
         router.push("/admin");
       } else {
         setUsername(prof.username);
-        setBalanceUsd(Number((prof as any)?.balance_usd || 0));
+        setBalanceZar(Number((prof as any)?.balance_zar || 0));
         setVerificationStatus((prof as any)?.verification_status || 'unverified');
       }
     });
@@ -73,7 +73,7 @@ export default function Playground() {
       setShowVerificationModal(true);
       return;
     }
-    if (stakeUsd > balanceUsd) {
+    if (stakeZar > balanceZar) {
       setStatus("Insufficient balance for selected stake");
       return;
     }
@@ -81,7 +81,7 @@ export default function Playground() {
     if (typeof window !== "undefined") window.localStorage.setItem("platinumchess-selected-time", time);
     setStatus(`Queued for ${time}... waiting for opponent`);
     socket.on("connect", () => {
-      socket.emit("queueForTime", { time, playerId, userId, stakeUsd });
+      socket.emit("queueForTime", { time, playerId, userId, stakeZar });
     });
     socket.on("queueRejected", (p: { reason: string }) => {
       setStatus(p.reason === "Insufficient funds" ? "Insufficient balance for selected stake" : `Queue rejected: ${p.reason}`);
@@ -94,7 +94,7 @@ export default function Playground() {
     });
   }
 
-  const [recent, setRecent] = useState<{ opponentName: string; result: string; deltaUsd: number; stakeUsd: number; createdAt: string }[]>([]);
+  const [recent, setRecent] = useState<{ opponentName: string; result: string; deltaZar: number; stakeZar: number; createdAt: string }[]>([]);
   const [recOffset, setRecOffset] = useState(0);
   async function loadRecent(offset = 0) {
     try {
@@ -113,7 +113,7 @@ export default function Playground() {
     <Bg>
       <Header
         username={username || "Account"}
-        balanceUsd={balanceUsd}
+        balanceZar={balanceZar}
         onProfile={() => router.push("/profile")}
         onLogout={async () => { await getSupabase().auth.signOut(); router.push("/auth/sign-in"); }}
         onDeposit={() => router.push("/deposit")}
@@ -133,18 +133,18 @@ export default function Playground() {
                 {[1,2,5,10].map(a => (
                   <button
                     key={a}
-                    onClick={() => { setStakeUsd(a); if (typeof window !== "undefined") window.localStorage.setItem("platinumchess-stake-usd", String(a)); }}
-                    className={`px-3 py-1.5 rounded-md text-sm font-semibold ${stakeUsd===a ? "bg-neutral-100 text-neutral-900" : "bg-neutral-800 text-neutral-200 hover:bg-neutral-700"}`}
+                    onClick={() => { setStakeZar(a); if (typeof window !== "undefined") window.localStorage.setItem("platinumchess-stake-zar", String(a)); }}
+                    className={`px-3 py-1.5 rounded-md text-sm font-semibold ${stakeZar===a ? "bg-neutral-100 text-neutral-900" : "bg-neutral-800 text-neutral-200 hover:bg-neutral-700"}`}
                   >
-                    ${a}
+                    R{a}
                   </button>
                 ))}
               </div>
               <div className="mt-2 w-full">
                 <input
                   inputMode="decimal"
-                  value={stakeUsd}
-                  onChange={e => { const n = Number(e.target.value); if (isFinite(n) && n > 0) { setStakeUsd(n); if (typeof window !== "undefined") window.localStorage.setItem("platinumchess-stake-usd", String(n)); } }}
+                  value={stakeZar}
+                  onChange={e => { const n = Number(e.target.value); if (isFinite(n) && n > 0) { setStakeZar(n); if (typeof window !== "undefined") window.localStorage.setItem("platinumchess-stake-zar", String(n)); } }}
                   className="w-full px-2 py-1.5 rounded-md bg-neutral-900 border border-neutral-800 text-neutral-100 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-neutral-700"
                 />
               </div>
@@ -155,18 +155,18 @@ export default function Playground() {
                 {[1,2,5,10].map(a => (
                   <button
                     key={a}
-                    onClick={() => { setStakeUsd(a); if (typeof window !== "undefined") window.localStorage.setItem("platinumchess-stake-usd", String(a)); }}
-                    className={`px-3 py-1.5 rounded-md text-sm font-semibold ${stakeUsd===a ? "bg-neutral-100 text-neutral-900" : "bg-neutral-800 text-neutral-200 hover:bg-neutral-700"}`}
+                    onClick={() => { setStakeZar(a); if (typeof window !== "undefined") window.localStorage.setItem("platinumchess-stake-zar", String(a)); }}
+                    className={`px-3 py-1.5 rounded-md text-sm font-semibold ${stakeZar===a ? "bg-neutral-100 text-neutral-900" : "bg-neutral-800 text-neutral-200 hover:bg-neutral-700"}`}
                   >
-                    ${a}
+                    R{a}
                   </button>
                 ))}
               </div>
               <div className="md:ml-2">
                 <input
                   inputMode="decimal"
-                  value={stakeUsd}
-                  onChange={e => { const n = Number(e.target.value); if (isFinite(n) && n > 0) { setStakeUsd(n); if (typeof window !== "undefined") window.localStorage.setItem("platinumchess-stake-usd", String(n)); } }}
+                  value={stakeZar}
+                  onChange={e => { const n = Number(e.target.value); if (isFinite(n) && n > 0) { setStakeZar(n); if (typeof window !== "undefined") window.localStorage.setItem("platinumchess-stake-zar", String(n)); } }}
                   className="w-24 px-2 py-1.5 rounded-md bg-neutral-900 border border-neutral-800 text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-700"
                 />
               </div>
@@ -196,9 +196,9 @@ export default function Playground() {
                 <div key={i} className="flex items-center justify-between py-2 border-b border-neutral-800 last:border-b-0">
                   <div>
                     <div className="text-neutral-200 text-sm">{g.opponentName}</div>
-                    <div className={`text-xs ${g.result!=="draw" ? (g.deltaUsd>0?"text-green-400":"text-red-400") : "text-neutral-400"}`}>{g.result!=="draw" ? (g.deltaUsd>0?`Won +$${g.deltaUsd.toFixed(2)}`:`Lost -$${Math.abs(g.deltaUsd).toFixed(2)}`) : "Draw ±$0.00"}</div>
+                    <div className={`text-xs ${g.result!=="draw" ? (g.deltaZar>0?"text-green-400":"text-red-400") : "text-neutral-400"}`}>{g.result!=="draw" ? (g.deltaZar>0?`Won +R${g.deltaZar.toFixed(2)}`:`Lost -R${Math.abs(g.deltaZar).toFixed(2)}`) : "Draw ±R0.00"}</div>
                   </div>
-                  <div className="text-xs text-neutral-400">${g.stakeUsd} stake</div>
+                  <div className="text-xs text-neutral-400">R{g.stakeZar} stake</div>
                 </div>
               ))}
               <div className="mt-3">

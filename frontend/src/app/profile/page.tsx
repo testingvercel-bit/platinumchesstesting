@@ -59,7 +59,7 @@ export default function ProfilePage() {
                         <p className="text-sm opacity-90">
                           {profile.verification_status === 'pending' 
                             ? 'Your account is currently under review. You cannot play games until an admin verifies your account.'
-                            : 'To verify your account, please make a deposit of at least $5. You cannot play games until verification is complete.'
+                            : 'To verify your account, please make a deposit of at least R5. You cannot play games until verification is complete.'
                           }
                         </p>
                       </div>

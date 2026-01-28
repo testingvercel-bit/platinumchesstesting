@@ -61,7 +61,7 @@ BEGIN
   END IF;
 
   -- Check balance
-  SELECT balance_usd INTO v_current_balance
+  SELECT balance_zar INTO v_current_balance
   FROM profiles
   WHERE id = v_user_id
   FOR UPDATE; -- Lock the row
@@ -72,7 +72,7 @@ BEGIN
 
   -- Deduct balance
   UPDATE profiles
-  SET balance_usd = balance_usd - p_amount
+  SET balance_zar = balance_zar - p_amount
   WHERE id = v_user_id;
 
   -- Create withdrawal record
@@ -122,7 +122,7 @@ BEGIN
 
   -- Refund balance
   UPDATE profiles
-  SET balance_usd = balance_usd + v_withdrawal_record.amount
+  SET balance_zar = balance_zar + v_withdrawal_record.amount
   WHERE id = v_withdrawal_record.user_id;
 
   RETURN jsonb_build_object('success', true);

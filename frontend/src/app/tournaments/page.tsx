@@ -66,7 +66,7 @@ export default async function TournamentsPage() {
               >
                 <div className="text-neutral-50 font-semibold text-lg">{t.name}</div>
                 <div className="mt-2 text-sm text-neutral-300">
-                  Prize fund: ${Number(t.prize_fund || 0).toLocaleString()}
+                  Prize fund: R{Number(t.prize_fund || 0).toLocaleString()}
                 </div>
                 <div className="mt-1 text-sm text-neutral-400">
                   Starts: {formatStart(t.start_date)}

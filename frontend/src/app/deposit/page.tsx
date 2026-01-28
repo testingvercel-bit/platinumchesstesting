@@ -9,10 +9,8 @@ export default function DepositPage() {
   const router = useRouter();
   const [username, setUsername] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
-  const [balanceUsd, setBalanceUsd] = useState<number>(0);
-  const [rate, setRate] = useState<number>(0);
-  const [estimatedZar, setEstimatedZar] = useState<number>(0);
-  const [amountUsd, setAmountUsd] = useState<string>("");
+  const [balanceZar, setBalanceZar] = useState<number>(0);
+  const [amount, setAmount] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -22,45 +20,25 @@ export default function DepositPage() {
       const uid = data.session?.user?.id;
       if (!uid) { router.push("/auth/sign-in"); return; }
       setUserId(uid);
-      const { data: prof } = await s.from("profiles").select("username,balance_usd").eq("id", uid).maybeSingle();
+      const { data: prof } = await s.from("profiles").select("username,balance_zar").eq("id", uid).maybeSingle();
       setUsername(((prof as any)?.username as string) || "Account");
-      setBalanceUsd(Number((prof as any)?.balance_usd || 0));
+      setBalanceZar(Number((prof as any)?.balance_zar || 0));
     });
   }, [router]);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const resp = await fetch(`/fx/usd-zar`);
-        const json = await resp.json();
-        const r = Number(json?.rate || 0);
-        if (r > 0) setRate(r);
-        else setRate(20);
-      } catch {
-        setRate(20);
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    const amt = Number(amountUsd);
-    if (!amt || isNaN(amt) || rate <= 0) { setEstimatedZar(0); return; }
-    setEstimatedZar(+((amt * rate)).toFixed(2));
-  }, [amountUsd, rate]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const amt = Number(amountUsd);
-    if (!amt || isNaN(amt)) { setError("Enter a valid USD amount"); return; }
-    if (amt < 5) { setError("Minimum deposit is 5 USD"); return; }
+    const amt = Number(amount);
+    if (!amt || isNaN(amt)) { setError("Enter a valid amount"); return; }
+    if (amt < 5) { setError("Minimum deposit is R5"); return; }
     setLoading(true);
     try {
       const origin = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000");
       const resp = await fetch(`${origin}/payments/deposit/form`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amountUsd: amt, userId, username })
+        body: JSON.stringify({ amount: amt, userId, username })
       });
       const json = await resp.json();
       setLoading(false);
@@ -89,7 +67,7 @@ export default function DepositPage() {
     <Bg>
       <Header
         username={username || "Account"}
-        balanceUsd={balanceUsd}
+        balanceZar={balanceZar}
         onProfile={() => router.push("/profile")}
         onLogout={async () => { await getSupabase().auth.signOut(); router.push("/auth/sign-in"); }}
         onDeposit={() => {}}
@@ -107,21 +85,21 @@ export default function DepositPage() {
               </div>
               <div className="rounded-2xl border border-neutral-800 bg-neutral-900/60 px-4 py-2 text-right">
                 <div className="text-xs text-neutral-400">Current Balance</div>
-                <div className="text-lg font-semibold tracking-tight text-emerald-400">${balanceUsd.toFixed(2)}</div>
+                <div className="text-lg font-semibold tracking-tight text-emerald-400">R{balanceZar.toFixed(2)}</div>
               </div>
             </div>
 
               <form onSubmit={onSubmit} className="mt-8 space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-300 mb-2">Amount (USD)</label>
+                  <label className="block text-sm font-medium text-neutral-300 mb-2">Amount (ZAR)</label>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                   <div className="flex-1">
                     <input
                       inputMode="decimal"
                       className="w-full px-4 py-3 rounded-2xl bg-neutral-900 border border-neutral-800 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-700"
-                      placeholder="Enter amount (min $5)"
-                      value={amountUsd}
-                      onChange={e => setAmountUsd(e.target.value)}
+                      placeholder="Enter amount (min R5)"
+                      value={amount}
+                      onChange={e => setAmount(e.target.value)}
                     />
                   </div>
                   <button
@@ -131,7 +109,6 @@ export default function DepositPage() {
                     {loading ? "Redirecting..." : "Proceed"}
                   </button>
                 </div>
-                <div className="mt-2 text-sm text-neutral-400">{rate > 0 ? `Estimated ZAR: R ${estimatedZar.toFixed(2)} (rate ${rate.toFixed(4)} ZAR/USD)` : `Fetching live rate...`}</div>
                 {error && <div className="mt-2 text-sm text-red-400">{error}</div>}
               </div>
 
@@ -176,7 +153,7 @@ export default function DepositPage() {
                 ))}
               </div>
 
-              <div className="pt-4 text-xs text-neutral-500">Minimum deposit is $5. Payments are processed in ZAR via PayFast. Your USD balance updates after payment completes.</div>
+              <div className="pt-4 text-xs text-neutral-500">Minimum deposit is R5. Payments are processed in ZAR via PayFast. Your balance updates after payment completes.</div>
             </form>
           </div>
         </div>

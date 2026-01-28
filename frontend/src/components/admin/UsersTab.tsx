@@ -167,7 +167,7 @@ export default function UsersTab() {
                     </td>
                     <td className="p-6">
                       <span className="text-emerald-400 font-mono font-medium">
-                        ${user.balance_usd?.toFixed(2)}
+                        R{user.balance_zar?.toFixed(2)}
                       </span>
                     </td>
                     <td className="p-6">
@@ -239,12 +239,12 @@ export default function UsersTab() {
             <p className="text-neutral-400 mb-6">
               Adjusting funds for <span className="text-white font-medium">{selectedUser.username}</span>.
               <br />
-              Current Balance: <span className="text-emerald-400">${selectedUser.balance_usd?.toFixed(2)}</span>
+              Current Balance: <span className="text-emerald-400">R{selectedUser.balance_zar?.toFixed(2)}</span>
             </p>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-neutral-400 mb-2">Amount (USD)</label>
+                <label className="block text-sm text-neutral-400 mb-2">Amount (ZAR)</label>
                 <input
                   type="number"
                   value={balanceAmount}
@@ -263,7 +263,7 @@ export default function UsersTab() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => handleUpdateBalance(selectedUser.id, selectedUser.balance_usd || 0, parseFloat(balanceAmount))}
+                  onClick={() => handleUpdateBalance(selectedUser.id, selectedUser.balance_zar || 0, parseFloat(balanceAmount))}
                   disabled={!balanceAmount}
                   className="flex-1 px-4 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >

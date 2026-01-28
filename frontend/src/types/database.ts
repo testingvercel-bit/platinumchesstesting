@@ -4,7 +4,7 @@ export interface Profile {
   full_name: string | null;
   email: string | null;
   avatar_url?: string;
-  balance_usd: number;
+  balance_zar: number;
   is_admin?: boolean;
   verification_status?: 'unverified' | 'pending' | 'verified';
 }

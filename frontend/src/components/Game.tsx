@@ -23,7 +23,7 @@ export default function Game({ roomId }: { roomId: string }) {
   const [drawOfferFrom, setDrawOfferFrom] = useState<Color | undefined>(undefined);
   const [drawPending, setDrawPending] = useState<boolean>(false);
   const [timeControl, setTimeControl] = useState<string>("");
-  const [stakePotUsd, setStakePotUsd] = useState<number>(0);
+  const [stakePotZar, setStakePotZar] = useState<number>(0);
   const [whiteMs, setWhiteMs] = useState<number>(0);
   const [blackMs, setBlackMs] = useState<number>(0);
   const incMsRef = useRef<number>(0);
@@ -136,7 +136,7 @@ export default function Game({ roomId }: { roomId: string }) {
       setGameOver(false);
       gameOverSoundedRef.current = false;
     });
-    socket.on("gameState", (p: { fen: string; turn: Color; history: Move[]; timeControl?: string; players?: { white?: string; black?: string }; stakePotUsd?: number }) => {
+    socket.on("gameState", (p: { fen: string; turn: Color; history: Move[]; timeControl?: string; players?: { white?: string; black?: string }; stakePotZar?: number }) => {
       console.debug("socket gameState", { turn: p.turn, histLen: (p.history || []).length });
       chessRef.current.load(p.fen);
       setFen(p.fen);
@@ -150,7 +150,7 @@ export default function Game({ roomId }: { roomId: string }) {
       setReplayIndex((p.history || []).length);
       const tc = p.timeControl || "";
       setTimeControl(tc);
-      setStakePotUsd(Number(p.stakePotUsd || 0));
+      setStakePotZar(Number(p.stakePotZar || 0));
       setPlayers(p.players || {});
       joinedReadyRef.current = true;
       if ((p.history || []).length === 0) gameOverSoundedRef.current = false;
@@ -368,7 +368,7 @@ export default function Game({ roomId }: { roomId: string }) {
         <div className="hidden lg:block space-y-3">
           <div className="bg-[#262421] px-4 py-3 border border-[#3d3d37]">
             <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Prize Pool</div>
-            <div className="text-2xl font-bold text-emerald-400">${stakePotUsd.toFixed(2)}</div>
+            <div className="text-2xl font-bold text-emerald-400">R{stakePotZar.toFixed(2)}</div>
           </div>
 
           {/* Opponent Info */}
@@ -485,7 +485,7 @@ export default function Game({ roomId }: { roomId: string }) {
         <div className="flex flex-col">
           <div className="lg:hidden mx-0 mt-2 px-0 py-2 text-center">
             <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Prize Pool</div>
-            <div className="text-2xl font-bold text-emerald-400">${stakePotUsd.toFixed(2)}</div>
+            <div className="text-2xl font-bold text-emerald-400">R{stakePotZar.toFixed(2)}</div>
           </div>
           {/* Mobile: Opponent Info */}
           <div className="lg:hidden mx-0 mt-2 px-0 py-2 flex items-center justify-between">
@@ -619,7 +619,7 @@ export default function Game({ roomId }: { roomId: string }) {
           {/* Desktop: Stake Display */}
           <div className="hidden lg:block bg-[#262421] px-4 py-3 border border-[#3d3d37]">
             <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Prize Pool</div>
-            <div className="text-2xl font-bold text-emerald-400">${stakePotUsd.toFixed(2)}</div>
+            <div className="text-2xl font-bold text-emerald-400">R{stakePotZar.toFixed(2)}</div>
           </div>
 
           {/* Chat */}
