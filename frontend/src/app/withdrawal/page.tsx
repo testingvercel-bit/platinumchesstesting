@@ -1,9 +1,9 @@
 "use client";
 import Bg from "@/components/Bg";
 import Header from "@/components/Header";
-import { getSupabase } from "@/lib/supabaseClient";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser, useClerk } from "@clerk/nextjs";
 
 type Withdrawal = {
   id: string;
@@ -17,7 +17,6 @@ type Withdrawal = {
 export default function WithdrawalPage() {
   const router = useRouter();
   const [username, setUsername] = useState<string>("");
-  const [userId, setUserId] = useState<string>("");
   const [balanceZar, setBalanceZar] = useState<number>(0);
   
   // Form State
@@ -38,34 +37,29 @@ export default function WithdrawalPage() {
   // History
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
 
-  const supabase = getSupabase();
+  const { isSignedIn, user } = useUser();
+  const { signOut } = useClerk();
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      const uid = data.session?.user?.id;
-      if (!uid) { router.push("/auth/sign-in"); return; }
-      setUserId(uid);
-      fetchProfile(uid);
-      fetchWithdrawals(uid);
-    });
-  }, [router]);
+    if (!isSignedIn || !user) { router.push("/auth/sign-in"); return; }
+    fetchProfile();
+    fetchWithdrawals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, isSignedIn, user]);
 
-  async function fetchProfile(uid: string) {
-    const { data: prof } = await supabase.from("profiles").select("username,balance_zar").eq("id", uid).maybeSingle();
-    if (prof) {
+  async function fetchProfile() {
+    const resp = await fetch("/api/profile/me");
+    const prof = await resp.json();
+    if (prof && !prof.error) {
       setUsername(prof.username || "Account");
       setBalanceZar(Number(prof.balance_zar || 0));
     }
   }
 
-  async function fetchWithdrawals(uid: string) {
-    const { data, error } = await supabase
-      .from("withdrawals")
-      .select("*")
-      .eq("user_id", uid)
-      .order("created_at", { ascending: false });
-    
-    if (data) setWithdrawals(data);
+  async function fetchWithdrawals() {
+    const resp = await fetch("/api/withdrawals/me");
+    const json = await resp.json();
+    if (Array.isArray(json)) setWithdrawals(json as Withdrawal[]);
   }
 
   const handleNextStep = () => {
@@ -93,15 +87,17 @@ export default function WithdrawalPage() {
     };
 
     try {
-      // Call the RPC function we defined in migration
-      const { data, error: rpcError } = await supabase.rpc("request_withdrawal", {
-        p_amount: Number(amount),
-        p_method: method,
-        p_account_details: details
+      const resp = await fetch("/api/withdrawals/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: Number(amount),
+          method,
+          account_details: details
+        })
       });
-
-      if (rpcError) throw rpcError;
-      if (data?.error) throw new Error(data.error);
+      const data = await resp.json();
+      if (!resp.ok || data?.error) throw new Error(data?.error || "Failed to request withdrawal");
 
       setSuccessMsg("Withdrawal requested successfully!");
       setStep(1);
@@ -110,8 +106,8 @@ export default function WithdrawalPage() {
       setAccountNumber("");
       
       // Refresh data
-      fetchProfile(userId);
-      fetchWithdrawals(userId);
+      fetchProfile();
+      fetchWithdrawals();
       
     } catch (err: any) {
       setError(err.message || "Failed to request withdrawal");
@@ -126,9 +122,9 @@ export default function WithdrawalPage() {
         username={username}
         balanceZar={balanceZar}
         onProfile={() => router.push("/profile")}
-        onLogout={async () => { await supabase.auth.signOut(); router.push("/auth/sign-in"); }}
+        onLogout={async () => { await signOut(); router.push("/auth/sign-in"); }}
         onDeposit={() => router.push("/deposit")}
-        isAuthenticated={!!userId}
+        isAuthenticated={!!user}
       />
 
       <div className="px-4 md:px-0 w-[min(92vw,800px)] mx-auto pb-20">

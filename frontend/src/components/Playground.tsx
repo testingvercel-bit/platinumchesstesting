@@ -6,9 +6,12 @@ import { getSupabase } from "@/lib/supabaseClient";
 import Header from "@/components/Header";
 import TournamentBanner from "@/components/TournamentBanner";
 import { io } from "socket.io-client";
+import { useUser, useClerk } from "@clerk/nextjs";
 
 export default function Playground() {
   const router = useRouter();
+  const { user, isLoaded, isSignedIn } = useUser();
+  const { signOut } = useClerk();
   const [username, setUsername] = useState<string>("");
   const [balanceZar, setBalanceZar] = useState<number>(0);
   const [verificationStatus, setVerificationStatus] = useState<'unverified' | 'pending' | 'verified'>('unverified');
@@ -32,35 +35,38 @@ export default function Playground() {
     if (typeof window !== "undefined") window.localStorage.setItem(key, id);
     return id;
   }, []);
+
   useEffect(() => {
-    const s = getSupabase();
-    s.auth.getSession().then(async ({ data }) => {
-      const uid = data.session?.user?.id;
-      if (!uid) { setUserId(""); return; }
-      setUserId(uid);
-      const { data: prof } = await s.from("profiles").select("full_name,username,phone_number,date_of_birth,balance_zar,is_admin,verification_status").eq("id", uid).maybeSingle();
-      if (!prof) {
-        // Handle case where profile doesn't exist at all - maybe redirect to sign-up or show error
-        // For now, let's just not redirect to complete-profile if it's missing, or maybe we SHOULD?
-        // If profile is missing, they probably DO need to complete it.
-        // But the user says they have a complete profile.
-        // Let's relax the check.
-        router.push("/complete-profile");
-      } else if (!prof.username) {
-         // Only require username strictly? Or maybe just check if "username" is present.
-         // The user says "even though i have a complete profile".
-         // Maybe one of the fields is null or empty string but considered "complete" by the user?
-         // Let's only redirect if username is missing, as that's critical for gameplay.
-         router.push("/complete-profile");
-      } else if (prof.is_admin) {
-        router.push("/admin");
-      } else {
-        setUsername(prof.username);
-        setBalanceZar(Number((prof as any)?.balance_zar || 0));
-        setVerificationStatus((prof as any)?.verification_status || 'unverified');
-      }
-    });
-  }, [router]);
+    if (!isLoaded) return;
+    if (!isSignedIn || !user) {
+      setUserId("");
+      return;
+    }
+    
+    setUserId(user.id);
+    
+    fetch("/api/profile/me")
+      .then(res => res.json())
+      .then(prof => {
+          if (prof.error) {
+             console.error("Profile fetch error:", prof.error);
+             return;
+          }
+          if (!prof) {
+             router.push("/complete-profile");
+          } else if (!prof.username) {
+             router.push("/complete-profile");
+          } else if (prof.is_admin) {
+             router.push("/admin");
+          } else {
+             setUsername(prof.username);
+             setBalanceZar(Number(prof.balance_zar || 0));
+             setVerificationStatus(prof.verification_status || 'unverified');
+          }
+      })
+      .catch(err => console.error("API error:", err));
+
+  }, [isLoaded, isSignedIn, user, router]);
   const presets = [
     { label: "1+0", sub: "Bullet" },
     { label: "2+1", sub: "Bullet" },
@@ -126,7 +132,7 @@ export default function Playground() {
         username={username || "Account"}
         balanceZar={balanceZar}
         onProfile={() => router.push("/profile")}
-        onLogout={async () => { await getSupabase().auth.signOut(); router.push("/auth/sign-in"); }}
+        onLogout={async () => { await signOut(); router.push("/auth/sign-in"); }}
         onDeposit={() => router.push("/deposit")}
         withdrawHref="/withdrawal"
         isAuthenticated={!!userId}

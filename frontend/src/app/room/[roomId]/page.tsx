@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Game from "@/components/Game";
 import Header from "@/components/Header";
-import { getSupabase } from "@/lib/supabaseClient";
+import { useUser, useClerk } from "@clerk/nextjs";
 
 export default function RoomPage() {
   const router = useRouter();
@@ -12,27 +12,32 @@ export default function RoomPage() {
   const [username, setUsername] = useState<string>("");
   const [balanceZar, setBalanceZar] = useState<number>(0);
   const [verificationStatus, setVerificationStatus] = useState<'unverified' | 'pending' | 'verified'>('unverified');
-  const [isAuth, setIsAuth] = useState<boolean>(false);
+  const { isSignedIn, user } = useUser();
+  const { signOut } = useClerk();
 
   const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   useEffect(() => {
-    const s = getSupabase();
-    s.auth.getSession().then(async ({ data }) => {
-      const uid = data.session?.user?.id;
-      if (!uid) { setUsername("Account"); setIsAuth(false); return; }
-      setIsAuth(true);
-      const { data: prof } = await s.from("profiles").select("username,balance_zar,verification_status").eq("id", uid).maybeSingle();
-      setUsername(((prof as any)?.username as string) || "Account");
-      setBalanceZar(Number((prof as any)?.balance_zar || 0));
-      const status = (prof as any)?.verification_status || 'unverified';
-      setVerificationStatus(status);
-      
-      if (status !== 'verified') {
-        setShowVerificationModal(true);
+    let aborted = false;
+    (async () => {
+      if (!isSignedIn || !user) {
+        setUsername("Account");
+        return;
       }
-    });
-  }, []);
+      const resp = await fetch("/api/profile/me");
+      const prof = await resp.json();
+      const uname = prof?.username || "Account";
+      const bal = Number(prof?.balance_zar || 0);
+      const status = prof?.verification_status || "unverified";
+      if (!aborted) {
+        setUsername(uname);
+        setBalanceZar(bal);
+        setVerificationStatus(status);
+        if (status !== "verified") setShowVerificationModal(true);
+      }
+    })();
+    return () => { aborted = true; };
+  }, [isSignedIn, user]);
 
   return (
     <div>
@@ -40,10 +45,10 @@ export default function RoomPage() {
         username={username || "Account"}
         balanceZar={balanceZar}
         onProfile={() => router.push("/profile")}
-        onLogout={async () => { await getSupabase().auth.signOut(); router.push("/auth/sign-in"); }}
+        onLogout={async () => { await signOut(); router.push("/auth/sign-in"); }}
         onDeposit={() => router.push("/deposit")}
         withdrawHref="/withdrawal"
-        isAuthenticated={isAuth}
+        isAuthenticated={!!user}
         onLogin={() => router.push("/auth/sign-in")}
         onSignup={() => router.push("/auth/sign-up")}
         verificationStatus={verificationStatus}

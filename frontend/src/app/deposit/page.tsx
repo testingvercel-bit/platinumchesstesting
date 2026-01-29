@@ -1,30 +1,33 @@
 "use client";
 import Bg from "@/components/Bg";
 import Header from "@/components/Header";
-import { getSupabase } from "@/lib/supabaseClient";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser, useClerk } from "@clerk/nextjs";
 
 export default function DepositPage() {
   const router = useRouter();
   const [username, setUsername] = useState<string>("");
-  const [userId, setUserId] = useState<string>("");
   const [balanceZar, setBalanceZar] = useState<number>(0);
   const [amount, setAmount] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { isSignedIn, user } = useUser();
+  const { signOut } = useClerk();
 
   useEffect(() => {
-    const s = getSupabase();
-    s.auth.getSession().then(async ({ data }) => {
-      const uid = data.session?.user?.id;
-      if (!uid) { router.push("/auth/sign-in"); return; }
-      setUserId(uid);
-      const { data: prof } = await s.from("profiles").select("username,balance_zar").eq("id", uid).maybeSingle();
-      setUsername(((prof as any)?.username as string) || "Account");
-      setBalanceZar(Number((prof as any)?.balance_zar || 0));
-    });
-  }, [router]);
+    if (!isSignedIn || !user) { router.push("/auth/sign-in"); return; }
+    let aborted = false;
+    (async () => {
+      const resp = await fetch("/api/profile/me");
+      const prof = await resp.json();
+      if (!aborted) {
+        setUsername(prof?.username || "Account");
+        setBalanceZar(Number(prof?.balance_zar || 0));
+      }
+    })();
+    return () => { aborted = true; };
+  }, [router, isSignedIn, user]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,7 +41,7 @@ export default function DepositPage() {
       const resp = await fetch(`${origin}/payments/deposit/form`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: amt, userId, username })
+        body: JSON.stringify({ amount: amt, userId: user?.id, username })
       });
       const json = await resp.json();
       setLoading(false);
@@ -69,10 +72,10 @@ export default function DepositPage() {
         username={username || "Account"}
         balanceZar={balanceZar}
         onProfile={() => router.push("/profile")}
-        onLogout={async () => { await getSupabase().auth.signOut(); router.push("/auth/sign-in"); }}
+        onLogout={async () => { await signOut(); router.push("/auth/sign-in"); }}
         onDeposit={() => {}}
         withdrawHref="/withdrawal"
-        isAuthenticated={!!userId}
+        isAuthenticated={!!user}
       />
 
       <div className="px-4 md:px-0 w-[min(92vw,800px)] mx-auto">
